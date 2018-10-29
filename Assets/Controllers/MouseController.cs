@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class MouseController : MonoBehaviour
 {
@@ -11,7 +12,9 @@ public class MouseController : MonoBehaviour
     Vector3 lastFramePosition;
     Vector3 startDragPosition;
     Tile tileUnderMouse;
+    bool buildModeIsObjects;
 
+    TileType buildModeTile = TileType.Floor;
     List<GameObject> dragPreviewGameObjects;
 
     // Use this for initialization
@@ -19,7 +22,7 @@ public class MouseController : MonoBehaviour
     {
         dragPreviewGameObjects = new List<GameObject>();
         // Preload 100 circleCursors when loading the scene
-        SimplePool.Preload(circleCursorPrefab, 100, circleCursorParent.transform);
+        SimplePool.Preload(circleCursorPrefab, 100, circleCursorParent);
     }
 
     // Update is called once per frame
@@ -54,6 +57,10 @@ public class MouseController : MonoBehaviour
 
     void UpdateDrag()
     {
+        // If we are over a UI element, then skip this function
+        if (EventSystem.current.IsPointerOverGameObject())
+            return;
+
         // Start Handle actions (left mouse clicks)
         if (Input.GetMouseButtonDown(0))
         {
@@ -73,11 +80,13 @@ public class MouseController : MonoBehaviour
             var tilesToEdit = WorldController.Instance.GetTilesAtCoordinates(startDragPosition, currFramePosition);
             if (tilesToEdit != null)
             {
+
                 foreach (var tile in tilesToEdit)
                 {
                     GameObject go = SimplePool.Spawn(circleCursorPrefab, new Vector3(tile.X, tile.Y, 0), Quaternion.identity);
                     dragPreviewGameObjects.Add(go);
                 }
+
             }
         }
 
@@ -85,15 +94,39 @@ public class MouseController : MonoBehaviour
         if (Input.GetMouseButtonUp(0))
         {
             var tilesToEdit = WorldController.Instance.GetTilesAtCoordinates(startDragPosition, currFramePosition);
-
+            // We are in InstallObjects mode
             foreach (var tile in tilesToEdit)
             {
-                if (tile.Type == Tile.TileType.Gras)
-                    tile.Type = Tile.TileType.Floor;
+                if (buildModeIsObjects)
+                {
+                    // Create an installed object
+                    WorldController.Instance.World.PlaceInstalledObject("greyWall", tile);
+                }
+                // We are in Tile changing mode
                 else
-                    tile.Type = Tile.TileType.Gras;
+                {
+                    tile.Type = buildModeTile;
+                }
             }
         }
+    }
+
+
+    public void SetModeBuildFloor()
+    {
+        buildModeIsObjects = false;
+        buildModeTile = TileType.Floor;
+    }
+
+    public void SetModeBuildWalls()
+    {
+        buildModeIsObjects = true;
+    }
+
+    public void SetModeBulldoze()
+    {
+        buildModeIsObjects = false;
+        buildModeTile = TileType.Ground;
     }
 
     // public void UpdateCursor()

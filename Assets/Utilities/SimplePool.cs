@@ -60,11 +60,15 @@ public static class SimplePool
 
         // The prefab that we are pooling
         GameObject prefab;
+        // The gameobject we want to set as root element for all objects 
+        // of this pool in the unity editors hierarchy
+        GameObject parent;
 
         // Constructor
-        public Pool(GameObject prefab, int initialQty)
+        public Pool(GameObject prefab, int initialQty, GameObject parent = null)
         {
             this.prefab = prefab;
+            this.parent = parent;
 
             // If Stack uses a linked list internally, then this
             // whole initialQty thing is a placebo that we could
@@ -82,6 +86,9 @@ public static class SimplePool
                 // instantiate a whole new object.
                 obj = (GameObject)GameObject.Instantiate(prefab, pos, rot);
                 obj.name = prefab.name + " (" + (nextId++) + ")";
+                // Set the objects root element in the unity editors hierarchy
+                if (parent != null)
+                    obj.transform.SetParent(parent.transform);
 
                 // Add a PoolMember component so we know what pool
                 // we belong to.
@@ -121,7 +128,7 @@ public static class SimplePool
             // Since Stack doesn't have a Capacity member, we can't control
             // the growth factor if it does have to expand an internal array.
             // On the other hand, it might simply be using a linked list 
-            // internally.  But then, why does it allow us to specify a size
+            // internally. But then, why does it allow us to specify a size
             // in the constructor? Maybe it's a placebo? Stack is weird.
             inactive.Push(obj);
         }
@@ -144,15 +151,17 @@ public static class SimplePool
     /// <summary>
     /// Initialize our dictionary.
     /// </summary>
-    static void Init(GameObject prefab = null, int qty = DEFAULT_POOL_SIZE)
+    static void Init(GameObject prefab = null, int qty = DEFAULT_POOL_SIZE, GameObject parent = null)
     {
+        // Initialize our dictionary if Init is called the first time (for the first pool)
         if (pools == null)
         {
             pools = new Dictionary<GameObject, Pool>();
         }
+        // Create a new pool if the current prefab is not yet in our dictionary pools AND add it to the dict
         if (prefab != null && pools.ContainsKey(prefab) == false)
         {
-            pools[prefab] = new Pool(prefab, qty);
+            pools[prefab] = new Pool(prefab, qty, parent);
         }
     }
 
@@ -164,17 +173,15 @@ public static class SimplePool
     /// Spawn/Despawn sequence is going to be pretty darn quick and
     /// this avoids code duplication.
     /// </summary>
-    static public void Preload(GameObject prefab, int qty = 1, Transform parent = null)
+    static public void Preload(GameObject prefab, int qty = 1, GameObject parent = null)
     {
-        Init(prefab, qty);
+        Init(prefab, qty, parent);
 
         // Make an array to grab the objects we're about to pre-spawn.
         GameObject[] obs = new GameObject[qty];
         for (int i = 0; i < qty; i++)
         {
             obs[i] = Spawn(prefab, Vector3.zero, Quaternion.identity);
-            if (parent != null)
-                obs[i].transform.SetParent(parent);
         }
 
         // Now despawn them all.
@@ -191,9 +198,9 @@ public static class SimplePool
     /// after spawning -- but remember that toggling IsActive will also
     /// call that function.
     /// </summary>
-    static public GameObject Spawn(GameObject prefab, Vector3 pos, Quaternion rot)
+    static public GameObject Spawn(GameObject prefab, Vector3 pos, Quaternion rot, GameObject parent = null)
     {
-        Init(prefab);
+        Init(prefab, parent: parent);
 
         return pools[prefab].Spawn(pos, rot);
     }

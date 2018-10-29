@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
 
 public class WorldController : MonoBehaviour
 {
@@ -15,6 +16,11 @@ public class WorldController : MonoBehaviour
     // Sprites array for our tiles, assignable in the inspector.
     [Header("Sprites")]
     public Sprite[] tileSprites;
+    [SerializeField] private Sprite wallSprite;
+
+    public Dictionary<Tile, GameObject> tileGameObjectMap;
+    public Dictionary<InstalledObject, GameObject> installedObjectGameObjectMap;
+    public Dictionary<string, Sprite> installedObjectSprites;
 
     public World World
     {
@@ -28,6 +34,11 @@ public class WorldController : MonoBehaviour
             Debug.LogError("World, Start - There should only be one world.");
         Instance = this;
 
+        tileGameObjectMap = new Dictionary<Tile, GameObject>();
+        installedObjectGameObjectMap = new Dictionary<InstalledObject, GameObject>();
+
+        LoadInstalledObjectSprites();
+
         World = new World();
 
         // Create a GameObject for each of our tiles, so they show visually
@@ -36,11 +47,16 @@ public class WorldController : MonoBehaviour
             {
                 Tile tileData = World.GetTileAt(x, y);
                 GameObject tileGo = new GameObject();
+                tileGameObjectMap.Add(tileData, tileGo);
                 tileGo.name = "Tile_" + tileData.X + "_" + tileData.Y;
                 tileGo.transform.SetParent(GameObject.Find("Tiles").transform, true);
                 tileGo.transform.position = new Vector2(tileData.X, tileData.Y);
-                tileData.RegisterTileTypeChangedCallback((tile) => { OnTileTypeChanged(tile, tileGo); });
                 SpriteRenderer tileSr = tileGo.AddComponent<SpriteRenderer>();
+
+                tileData.RegisterTileTypeChangedCallback(OnTileTypeChanged);
+                tileData.RegisterTileTypeChangedCallback(AnotherCallBackTest);
+                // Previous integration of registrating a callback via lambda
+                // tileData.RegisterTileTypeChangedCallback((tile) => { OnTileTypeChanged(tile, tileGo); });
             }
         World.RandomizeTiles();
     }
@@ -50,15 +66,36 @@ public class WorldController : MonoBehaviour
 
     }
 
-    private void OnTileTypeChanged(Tile tileData, GameObject tileGo)
+    private void AnotherCallBackTest(Tile tileData)
     {
+        //Debug.Log("This callback was successfully called!");
+    }
+
+    private void OnTileTypeChanged(Tile tileData)
+    {
+        if (!tileGameObjectMap.ContainsKey(tileData))
+        {
+            Debug.LogError("OnTileTypeChanged - Tile could not be found in the tileGameObjectMap!");
+            return;
+        }
+
+        GameObject tileGo = tileGameObjectMap[tileData];
+
+        if (tileGo == null)
+        {
+            Debug.LogError("OnTileTypeChanged - GameObject has been destroyed already.");
+            return;
+        }
+
         SpriteRenderer tileSr = tileGo.GetComponent<SpriteRenderer>();
         if (tileSr == null)
             Debug.LogError("OnTileTypeChanged - Tile GameObject does not have a SpriteRenderer.");
-        if (tileData.Type == Tile.TileType.Floor)
+        if (tileData.Type == TileType.Ground)
             tileSr.sprite = tileSprites[0];
-        else if (tileData.Type == Tile.TileType.Gras)
+        else if (tileData.Type == TileType.Gras)
             tileSr.sprite = tileSprites[1];
+        else if (tileData.Type == TileType.Floor)
+            tileSr.sprite = tileSprites[2];
         else
             Debug.LogError("OnTileTypeChanged - Tile sprite out of range.");
     }
@@ -131,6 +168,66 @@ public class WorldController : MonoBehaviour
                 Start = pointB;
                 End = pointA;
             }
+        }
+
+    }
+
+    public void DestroyAllTileGameObjects()
+    {
+        while (tileGameObjectMap.Count > 0)
+        {
+            Tile tileData = tileGameObjectMap.Keys.First();
+            GameObject tileGo = tileGameObjectMap[tileData];
+
+            // Remove the current pair from the dictionary
+            tileGameObjectMap.Remove(tileData);
+            // Unregister the callback
+            tileData.UnregisterTileTypeChangedCallback(OnTileTypeChanged);
+            // Destroy the visual part of the Tile -> GameObject
+            Destroy(tileGo);
+        }
+    }
+
+    public void OnInstalledObjectCreated(InstalledObject obj)
+    {
+        GameObject go = new GameObject();
+
+        installedObjectGameObjectMap.Add(obj, go);
+        go.name = obj.ObjectType + "_" + obj.Tile.X + "_" + obj.Tile.Y;
+        go.transform.position = new Vector3(obj.Tile.X, obj.Tile.Y, 0);
+        go.transform.SetParent(this.transform, true);
+
+        go.AddComponent<SpriteRenderer>().sprite = GetInstalledObjectSprite(obj);
+
+        obj.RegisterOnChangedCallback(OnInstalledObjectChanged);
+
+    }
+
+    Sprite GetInstalledObjectSprite(InstalledObject obj)
+    {
+        if (obj.linksToNeighbors == false)
+        {
+            Debug.Log("Set Sprite: " + installedObjectSprites[obj.ObjectType + "_0"]);
+            return installedObjectSprites[obj.ObjectType + "_0"];
+        }
+
+        Debug.Log("Set Sprite: " + installedObjectSprites[obj.ObjectType + "_0"]);
+        return installedObjectSprites[obj.ObjectType + "_0"];
+    }
+
+    void OnInstalledObjectChanged(InstalledObject obj)
+    {
+
+    }
+
+    void LoadInstalledObjectSprites()
+    {
+        installedObjectSprites = new Dictionary<string, Sprite>();
+        Sprite[] s = Resources.LoadAll<Sprite>("Walls/");
+
+        foreach (var sprite in s)
+        {
+            installedObjectSprites.Add(sprite.name, sprite);
         }
 
     }

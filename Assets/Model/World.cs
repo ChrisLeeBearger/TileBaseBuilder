@@ -1,11 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class World
 {
 
     Tile[,] tiles;
+
+    Dictionary<string, InstalledObject> installedObjectPrototypes;
     public int Width
     {
         get;
@@ -16,7 +19,6 @@ public class World
         get;
         private set;
     }
-
     public World(int width = 100, int height = 100)
     {
         this.Width = width;
@@ -33,6 +35,24 @@ public class World
         }
 
         Debug.Log("World created with " + (width * height) + " tiles.");
+
+        CreateInstalledObjectsPrototypes();
+
+    }
+
+    void CreateInstalledObjectsPrototypes()
+    {
+        installedObjectPrototypes = new Dictionary<string, InstalledObject>();
+        InstalledObject wallPrototype = InstalledObject.CreatePrototype(
+            "greyWall",
+            0,      // Impassable
+            1,      // Width
+            1,      // Height
+            true    // Links to neighbor Walls
+        );
+
+        installedObjectPrototypes.Add("greyWall", wallPrototype);
+        Debug.Log("Prototype has been created: " + wallPrototype.ObjectType);
     }
 
     public Tile GetTileAt(int x, int y)
@@ -47,6 +67,22 @@ public class World
         return tile;
     }
 
+    public void PlaceInstalledObject(string objectType, Tile tile)
+    {
+        // Check if we have a prototype for the given objectType string
+        if (installedObjectPrototypes.ContainsKey(objectType) == false)
+        {
+            Debug.LogError("installedObjectPrototypes does not contain a prototype for key: " + objectType);
+            return;
+        }
+
+        InstalledObject obj = InstalledObject.PlaceInstance(installedObjectPrototypes[objectType], tile);
+
+        // Create the visual GameObject if we placed the object successfully
+        if (obj != null)
+            WorldController.Instance.OnInstalledObjectCreated(obj);
+    }
+
     public void RandomizeTiles()
     {
         Debug.Log("World has been randomized.");
@@ -54,10 +90,10 @@ public class World
         {
             for (int y = 0; y < Height; y++)
             {
-                if (Random.Range(0, 2) == 0)
-                    tiles[x, y].Type = Tile.TileType.Floor;
+                if (UnityEngine.Random.Range(0, 2) == 0)
+                    tiles[x, y].Type = TileType.Ground;
                 else
-                    tiles[x, y].Type = Tile.TileType.Gras;
+                    tiles[x, y].Type = TileType.Gras;
             }
         }
     }

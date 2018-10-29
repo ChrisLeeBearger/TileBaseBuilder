@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+public enum TileType { Empty, Ground, Gras, Floor, Water, Stone };
+
 public class Tile
 {
 
-    public enum TileType { Empty, Floor, Gras, Dirt, Water, Stone };
 
     Action<Tile> cbTileTypeChanged;
 
@@ -58,5 +59,29 @@ public class Tile
     public void UnregisterTileTypeChangedCallback(Action<Tile> callback)
     {
         cbTileTypeChanged -= callback;
+    }
+
+    public bool PlaceObject(InstalledObject objInstance)
+    {
+        if (objInstance == null)
+        {
+            installedObject = null;
+            return true;
+        }
+
+        if (installedObject != null)
+        {
+            Debug.LogError("Trying to assign an installed object to a tile that already has one!");
+            return false;
+        }
+
+        if (Type != TileType.Floor)
+        {
+            Debug.LogError("Walls can only be built on Tiles of Type Floor.");
+            return false;
+        }
+
+        installedObject = objInstance;
+        return true;
     }
 }
