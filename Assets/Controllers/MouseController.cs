@@ -125,10 +125,7 @@ public class MouseController : MonoBehaviour
         buildModeTile = TileType.Floor;
     }
 
-    public void SetModeBuildWalls()
-    {
-        buildModeIsObjects = true;
-    }
+    public void SetModeBuildWalls() => buildModeIsObjects = true;
 
     public void SetModeBulldoze()
     {

@@ -137,13 +137,7 @@ public class WorldController : MonoBehaviour
         return tiles;
     }
     // Takes two coordinates from a single axis and orders them 
-    public Vector2Int GetStartAndEndCoordinates(int start, int end)
-    {
-        if (start <= end)
-            return new Vector2Int(start, end);
-        else
-            return new Vector2Int(end, start);
-    }
+    public Vector2Int GetStartAndEndCoordinates(int start, int end) => start <= end ? new Vector2Int(start, end) : new Vector2Int(end, start);
 
     public class SortedAxisPoints
     {
@@ -158,13 +152,7 @@ public class WorldController : MonoBehaviour
             private set;
         }
 
-        public int Length
-        {
-            get
-            {
-                return (End - Start + 1);
-            }
-        }
+        public int Length => End - Start + 1;
 
         public SortedAxisPoints(int pointA, int pointB)
         {

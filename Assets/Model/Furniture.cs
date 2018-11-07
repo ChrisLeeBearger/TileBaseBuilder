@@ -72,24 +72,12 @@ public class Furniture
 
         return obj;
     }
-    public void RegisterOnChangedCallback(Action<Furniture> callbackFunction)
-    {
-        cbOnChanged += callbackFunction;
-    }
+    public void RegisterOnChangedCallback(Action<Furniture> callbackFunction) => cbOnChanged += callbackFunction;
 
-    public void UnregisterOnChangedCallback(Action<Furniture> callbackFunction)
-    {
-        cbOnChanged -= callbackFunction;
-    }
+    public void UnregisterOnChangedCallback(Action<Furniture> callbackFunction) => cbOnChanged -= callbackFunction;
 
-    public bool IsValidPosition(Tile tile)
-    {
-        // Make sure the Tile below is, is of Type Floor and no Furniture is assigned to the Tile
-        if (tile.Type != TileType.Floor || tile.Furniture != null)
-            return false;
-
-        return true;
-    }
+    // Make sure the Tile below is, is of Type Floor and no Furniture is assigned to the Tile
+    public bool IsValidPosition(Tile tile) => !(tile.Type != TileType.Floor || tile.Furniture != null);
 
     public bool IsValidPosition_Door(Tile tile)
     {

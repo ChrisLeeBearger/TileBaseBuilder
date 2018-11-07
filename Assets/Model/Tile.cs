@@ -7,17 +7,12 @@ public enum TileType { Empty, Ground, Gras, Floor, Water, Stone };
 
 public class Tile
 {
-
-
     Action<Tile> cbTileTypeChanged;
 
     TileType type = TileType.Empty;
     public TileType Type
     {
-        get
-        {
-            return type;
-        }
+        get => type;
         set
         {
             if (type != value)
@@ -59,15 +54,9 @@ public class Tile
         this.Y = y;
     }
 
-    public void RegisterTileTypeChangedCallback(Action<Tile> callback)
-    {
-        cbTileTypeChanged += callback;
-    }
+    public void RegisterTileTypeChangedCallback(Action<Tile> callback) => cbTileTypeChanged += callback;
 
-    public void UnregisterTileTypeChangedCallback(Action<Tile> callback)
-    {
-        cbTileTypeChanged -= callback;
-    }
+    public void UnregisterTileTypeChangedCallback(Action<Tile> callback) => cbTileTypeChanged -= callback;
 
     public bool PlaceFurniture(Furniture objInstance)
     {
