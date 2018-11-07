@@ -5,7 +5,6 @@ using System;
 
 public class World
 {
-
     Tile[,] tiles;
 
     Dictionary<string, Furniture> furniturePrototypes;

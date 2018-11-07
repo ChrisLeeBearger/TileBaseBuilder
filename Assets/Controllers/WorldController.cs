@@ -138,7 +138,6 @@ public class WorldController : MonoBehaviour
     }
     // Takes two coordinates from a single axis and orders them 
     public Vector2Int GetStartAndEndCoordinates(int start, int end) => start <= end ? new Vector2Int(start, end) : new Vector2Int(end, start);
-
     public class SortedAxisPoints
     {
         public int Start
@@ -240,11 +239,7 @@ public class WorldController : MonoBehaviour
                     firstNeighborConnected = true;
 
                 spriteNumber += bitValue;
-                if (updateNeighbors == true)
-                {
-                    SpriteRenderer neighborSpriteRenderer = FurnitureGameObjectMap[neighborTile.Furniture].GetComponent<SpriteRenderer>();
-                    neighborSpriteRenderer.sprite = GetFurnitureSprite(neighborTile.Furniture);
-                }
+                SetNeighborSprite(neighborTile.Furniture);
 
                 if (lastNeighborConnected == true)
                 {
@@ -252,11 +247,7 @@ public class WorldController : MonoBehaviour
                     if (neighborTileCorner != null && neighborTileCorner.Furniture != null && obj.ObjectType == neighborTileCorner.Furniture.ObjectType)
                     {
                         spriteNumber += bitValue * 8;
-                        if (updateNeighbors == true)
-                        {
-                            SpriteRenderer neighborSpriteRenCorner = FurnitureGameObjectMap[neighborTileCorner.Furniture].GetComponent<SpriteRenderer>();
-                            neighborSpriteRenCorner.sprite = GetFurnitureSprite(neighborTileCorner.Furniture);
-                        }
+                        SetNeighborSprite(neighborTileCorner.Furniture);
                     }
                 }
                 lastNeighborConnected = true;
@@ -273,14 +264,19 @@ public class WorldController : MonoBehaviour
             if (neighborTileCorner != null && neighborTileCorner.Furniture != null && obj.ObjectType == neighborTileCorner.Furniture.ObjectType)
             {
                 spriteNumber += 128;
-                if (updateNeighbors == true)
-                {
-                    SpriteRenderer neighborSpriteRenCorner = FurnitureGameObjectMap[neighborTileCorner.Furniture].GetComponent<SpriteRenderer>();
-                    neighborSpriteRenCorner.sprite = GetFurnitureSprite(neighborTileCorner.Furniture);
-                }
+                SetNeighborSprite(neighborTileCorner.Furniture);
             }
         }
         return FurnitureSprites[obj.ObjectType + "_" + spriteNumber];
+
+        void SetNeighborSprite(Furniture furniture)
+        {
+            if (updateNeighbors == true)
+            {
+                SpriteRenderer neighborSpriteRenCorner = FurnitureGameObjectMap[furniture].GetComponent<SpriteRenderer>();
+                neighborSpriteRenCorner.sprite = GetFurnitureSprite(furniture);
+            }
+        }
     }
 
     void OnFurnitureChanged(Furniture obj)
