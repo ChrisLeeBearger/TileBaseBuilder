@@ -29,8 +29,16 @@ public class Tile
         }
     }
 
-    LooseObject looseObject;
-    InstalledObject installedObject;
+    public LooseObject LooseObject
+    {
+        get;
+        protected set;
+    }
+    public Furniture Furniture
+    {
+        get;
+        protected set;
+    }
 
     World world;
     public int X
@@ -61,15 +69,15 @@ public class Tile
         cbTileTypeChanged -= callback;
     }
 
-    public bool PlaceObject(InstalledObject objInstance)
+    public bool PlaceFurniture(Furniture objInstance)
     {
         if (objInstance == null)
         {
-            installedObject = null;
+            Furniture = null;
             return true;
         }
 
-        if (installedObject != null)
+        if (Furniture != null)
         {
             Debug.LogError("Trying to assign an installed object to a tile that already has one!");
             return false;
@@ -81,7 +89,7 @@ public class Tile
             return false;
         }
 
-        installedObject = objInstance;
+        Furniture = objInstance;
         return true;
     }
 }

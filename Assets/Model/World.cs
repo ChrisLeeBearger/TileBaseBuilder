@@ -8,7 +8,7 @@ public class World
 
     Tile[,] tiles;
 
-    Dictionary<string, InstalledObject> installedObjectPrototypes;
+    Dictionary<string, Furniture> furniturePrototypes;
     public int Width
     {
         get;
@@ -36,14 +36,14 @@ public class World
 
         Debug.Log("World created with " + (width * height) + " tiles.");
 
-        CreateInstalledObjectsPrototypes();
+        CreateFurniturePrototypes();
 
     }
 
-    void CreateInstalledObjectsPrototypes()
+    void CreateFurniturePrototypes()
     {
-        installedObjectPrototypes = new Dictionary<string, InstalledObject>();
-        InstalledObject wallPrototype = InstalledObject.CreatePrototype(
+        furniturePrototypes = new Dictionary<string, Furniture>();
+        Furniture wallPrototype = Furniture.CreatePrototype(
             "greyWall",
             0,      // Impassable
             1,      // Width
@@ -51,7 +51,7 @@ public class World
             true    // Links to neighbor Walls
         );
 
-        installedObjectPrototypes.Add("greyWall", wallPrototype);
+        furniturePrototypes.Add("greyWall", wallPrototype);
         Debug.Log("Prototype has been created: " + wallPrototype.ObjectType);
     }
 
@@ -60,27 +60,27 @@ public class World
         if (x > Width || x < 0 || y > Height || y < 0)
             Debug.LogError("Requested tile is out of range.");
 
-        var tile = tiles[x, y];
+        Tile tile = tiles[x, y];
         if (tile == null)
             Debug.LogError("Missing tile at position (" + x + ", " + y + ")");
 
         return tile;
     }
 
-    public void PlaceInstalledObject(string objectType, Tile tile)
+    public void PlaceFurniture(string objectType, Tile tile)
     {
         // Check if we have a prototype for the given objectType string
-        if (installedObjectPrototypes.ContainsKey(objectType) == false)
+        if (furniturePrototypes.ContainsKey(objectType) == false)
         {
-            Debug.LogError("installedObjectPrototypes does not contain a prototype for key: " + objectType);
+            Debug.LogError("FurniturePrototypes does not contain a prototype for key: " + objectType);
             return;
         }
 
-        InstalledObject obj = InstalledObject.PlaceInstance(installedObjectPrototypes[objectType], tile);
+        Furniture obj = Furniture.PlaceInstance(furniturePrototypes[objectType], tile);
 
         // Create the visual GameObject if we placed the object successfully
         if (obj != null)
-            WorldController.Instance.OnInstalledObjectCreated(obj);
+            WorldController.Instance.OnFurnitureCreated(obj);
     }
 
     public void RandomizeTiles()

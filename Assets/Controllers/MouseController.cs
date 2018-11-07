@@ -11,7 +11,9 @@ public class MouseController : MonoBehaviour
     Vector3 currFramePosition;
     Vector3 lastFramePosition;
     Vector3 startDragPosition;
+    bool isDragging = false;
     Tile tileUnderMouse;
+    Tile tileLastFrame;
     bool buildModeIsObjects;
 
     TileType buildModeTile = TileType.Floor;
@@ -37,6 +39,7 @@ public class MouseController : MonoBehaviour
         UpdateCameraZooming();
 
         lastFramePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        tileLastFrame = tileUnderMouse;
     }
 
     void UpdateCameraMovement()
@@ -65,16 +68,19 @@ public class MouseController : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             startDragPosition = currFramePosition;
+            GameObject go = SimplePool.Spawn(circleCursorPrefab, new Vector3(tileUnderMouse.X, tileUnderMouse.Y, 0), Quaternion.identity);
+            dragPreviewGameObjects.Add(go);
+            isDragging = true;
         }
 
-        while (dragPreviewGameObjects.Count > 0)
+        while (dragPreviewGameObjects.Count > 0 && (isDragging == false || tileLastFrame != tileUnderMouse))
         {
             GameObject go = dragPreviewGameObjects[0];
             dragPreviewGameObjects.RemoveAt(0);
             SimplePool.Despawn(go);
         }
 
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButton(0) && tileLastFrame != tileUnderMouse)
         {
             // Display a preview of the drag area
             var tilesToEdit = WorldController.Instance.GetTilesAtCoordinates(startDragPosition, currFramePosition);
@@ -100,7 +106,7 @@ public class MouseController : MonoBehaviour
                 if (buildModeIsObjects)
                 {
                     // Create an installed object
-                    WorldController.Instance.World.PlaceInstalledObject("greyWall", tile);
+                    WorldController.Instance.World.PlaceFurniture("greyWall", tile);
                 }
                 // We are in Tile changing mode
                 else
@@ -108,6 +114,7 @@ public class MouseController : MonoBehaviour
                     tile.Type = buildModeTile;
                 }
             }
+            isDragging = false;
         }
     }
 

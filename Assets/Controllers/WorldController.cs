@@ -19,8 +19,8 @@ public class WorldController : MonoBehaviour
     [SerializeField] private Sprite wallSprite;
 
     public Dictionary<Tile, GameObject> tileGameObjectMap;
-    public Dictionary<InstalledObject, GameObject> installedObjectGameObjectMap;
-    public Dictionary<string, Sprite> installedObjectSprites;
+    public Dictionary<Furniture, GameObject> FurnitureGameObjectMap;
+    public Dictionary<string, Sprite> FurnitureSprites;
 
     public World World
     {
@@ -35,9 +35,9 @@ public class WorldController : MonoBehaviour
         Instance = this;
 
         tileGameObjectMap = new Dictionary<Tile, GameObject>();
-        installedObjectGameObjectMap = new Dictionary<InstalledObject, GameObject>();
+        FurnitureGameObjectMap = new Dictionary<Furniture, GameObject>();
 
-        LoadInstalledObjectSprites();
+        LoadFurnitureSprites();
 
         World = new World();
 
@@ -47,18 +47,28 @@ public class WorldController : MonoBehaviour
             {
                 Tile tileData = World.GetTileAt(x, y);
                 GameObject tileGo = new GameObject();
+                // Add the current Tile/GameObject to our dictionary
+                // This is needed so we can relate between them
                 tileGameObjectMap.Add(tileData, tileGo);
+                // Set the name of the tile within the unity editor 
                 tileGo.name = "Tile_" + tileData.X + "_" + tileData.Y;
+                // Find the GameObject "Tiles" in the editor and set it as parent for all our Tiles
                 tileGo.transform.SetParent(GameObject.Find("Tiles").transform, true);
                 tileGo.transform.position = new Vector2(tileData.X, tileData.Y);
-                SpriteRenderer tileSr = tileGo.AddComponent<SpriteRenderer>();
+
+                // Add a SpriteRender so that we can define a Sprite
+                // Add a default sprite for empty tiles.
+                tileGo.AddComponent<SpriteRenderer>().sprite = tileSprites[0];
 
                 tileData.RegisterTileTypeChangedCallback(OnTileTypeChanged);
                 tileData.RegisterTileTypeChangedCallback(AnotherCallBackTest);
                 // Previous integration of registrating a callback via lambda
                 // tileData.RegisterTileTypeChangedCallback((tile) => { OnTileTypeChanged(tile, tileGo); });
             }
-        World.RandomizeTiles();
+        // World.RandomizeTiles();
+
+        // Center the camera on game start
+        Camera.main.transform.position = new Vector3(World.Width / 2, World.Height / 2, -15);
     }
 
     void Update()
@@ -188,46 +198,116 @@ public class WorldController : MonoBehaviour
         }
     }
 
-    public void OnInstalledObjectCreated(InstalledObject obj)
+    public void OnFurnitureCreated(Furniture obj)
     {
-        GameObject go = new GameObject();
+        GameObject furnGo = new GameObject();
 
-        installedObjectGameObjectMap.Add(obj, go);
-        go.name = obj.ObjectType + "_" + obj.Tile.X + "_" + obj.Tile.Y;
-        go.transform.position = new Vector3(obj.Tile.X, obj.Tile.Y, 0);
-        go.transform.SetParent(this.transform, true);
+        FurnitureGameObjectMap.Add(obj, furnGo);
+        furnGo.name = obj.ObjectType + "_" + obj.Tile.X + "_" + obj.Tile.Y;
+        furnGo.transform.position = new Vector3(obj.Tile.X, obj.Tile.Y, -1);
+        furnGo.transform.SetParent(this.transform, true);
 
-        go.AddComponent<SpriteRenderer>().sprite = GetInstalledObjectSprite(obj);
+        furnGo.AddComponent<SpriteRenderer>().sprite = GetFurnitureSprite(obj, true);
 
-        obj.RegisterOnChangedCallback(OnInstalledObjectChanged);
+        obj.RegisterOnChangedCallback(OnFurnitureChanged);
 
     }
 
-    Sprite GetInstalledObjectSprite(InstalledObject obj)
+    Sprite GetFurnitureSprite(Furniture obj, bool updateNeighbors = false)
     {
         if (obj.linksToNeighbors == false)
         {
-            Debug.Log("Set Sprite: " + installedObjectSprites[obj.ObjectType + "_0"]);
-            return installedObjectSprites[obj.ObjectType + "_0"];
+            Debug.Log("Set Sprite: " + FurnitureSprites[obj.ObjectType + "_0"]);
+            return FurnitureSprites[obj.ObjectType + "_0"];
         }
 
-        Debug.Log("Set Sprite: " + installedObjectSprites[obj.ObjectType + "_0"]);
-        return installedObjectSprites[obj.ObjectType + "_0"];
+        // Array of fixed defined direct neighbors -> North, East, South, West
+        Vector2Int[] dirctNeighbors = new Vector2Int[] {
+            new Vector2Int(0, 1),
+            new Vector2Int(1, 0),
+            new Vector2Int(0,-1),
+            new Vector2Int(-1,0)
+        };
+
+        // Array of fixed defined diagonal neighbors -> NorthEast, SouthEast, SouthWest, NorthWest
+        Vector2Int[] inDirctNeighbors = new Vector2Int[] {
+            new Vector2Int(1, 1),
+            new Vector2Int(1, -1),
+            new Vector2Int(-1,-1),
+            new Vector2Int(-1,1)
+        };
+
+        // spriteNumber will define which of the Sprites will be taken
+        int spriteNumber = 0;
+        int bitValue = 1;
+        bool firstNeighborConnected = false;
+        bool lastNeighborConnected = false;
+
+        for (int i = 0; i < 4; i++)
+        {
+            Tile neighborTile = World.GetTileAt(obj.Tile.X + dirctNeighbors[i].x, obj.Tile.Y + dirctNeighbors[i].y);
+            if (neighborTile != null && neighborTile.Furniture != null && obj.ObjectType == neighborTile.Furniture.ObjectType)
+            {
+                if (i == 0)
+                    firstNeighborConnected = true;
+
+                spriteNumber += bitValue;
+                if (updateNeighbors == true)
+                {
+                    SpriteRenderer neighborSpriteRenderer = FurnitureGameObjectMap[neighborTile.Furniture].GetComponent<SpriteRenderer>();
+                    neighborSpriteRenderer.sprite = GetFurnitureSprite(neighborTile.Furniture);
+                }
+
+                if (lastNeighborConnected == true)
+                {
+                    Tile neighborTileCorner = World.GetTileAt(obj.Tile.X + inDirctNeighbors[i - 1].x, obj.Tile.Y + inDirctNeighbors[i - 1].y);
+                    if (neighborTileCorner != null && neighborTileCorner.Furniture != null && obj.ObjectType == neighborTileCorner.Furniture.ObjectType)
+                    {
+                        spriteNumber += bitValue * 8;
+                        if (updateNeighbors == true)
+                        {
+                            SpriteRenderer neighborSpriteRenCorner = FurnitureGameObjectMap[neighborTileCorner.Furniture].GetComponent<SpriteRenderer>();
+                            neighborSpriteRenCorner.sprite = GetFurnitureSprite(neighborTileCorner.Furniture);
+                        }
+                    }
+                }
+                lastNeighborConnected = true;
+            }
+            else
+                lastNeighborConnected = false;
+            // Increase the bit representation for the next loop    
+            bitValue *= 2;
+        }
+
+        if (firstNeighborConnected && lastNeighborConnected)
+        {
+            Tile neighborTileCorner = World.GetTileAt(obj.Tile.X + inDirctNeighbors[3].x, obj.Tile.Y + inDirctNeighbors[3].y);
+            if (neighborTileCorner != null && neighborTileCorner.Furniture != null && obj.ObjectType == neighborTileCorner.Furniture.ObjectType)
+            {
+                spriteNumber += 128;
+                if (updateNeighbors == true)
+                {
+                    SpriteRenderer neighborSpriteRenCorner = FurnitureGameObjectMap[neighborTileCorner.Furniture].GetComponent<SpriteRenderer>();
+                    neighborSpriteRenCorner.sprite = GetFurnitureSprite(neighborTileCorner.Furniture);
+                }
+            }
+        }
+        return FurnitureSprites[obj.ObjectType + "_" + spriteNumber];
     }
 
-    void OnInstalledObjectChanged(InstalledObject obj)
+    void OnFurnitureChanged(Furniture obj)
     {
 
     }
 
-    void LoadInstalledObjectSprites()
+    void LoadFurnitureSprites()
     {
-        installedObjectSprites = new Dictionary<string, Sprite>();
+        FurnitureSprites = new Dictionary<string, Sprite>();
         Sprite[] s = Resources.LoadAll<Sprite>("Walls/");
 
         foreach (var sprite in s)
         {
-            installedObjectSprites.Add(sprite.name, sprite);
+            FurnitureSprites.Add(sprite.name, sprite);
         }
 
     }
