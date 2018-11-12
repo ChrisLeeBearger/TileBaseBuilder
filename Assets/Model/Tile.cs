@@ -4,7 +4,6 @@ using UnityEngine;
 using System;
 
 public enum TileType { Empty, Ground, Gras, Floor, Water, Stone };
-
 public class Tile
 {
 
@@ -14,10 +13,7 @@ public class Tile
     TileType type = TileType.Empty;
     public TileType Type
     {
-        get
-        {
-            return type;
-        }
+        get { return type; }
         set
         {
             if (type != value)
@@ -29,28 +25,11 @@ public class Tile
         }
     }
 
-    public LooseObject LooseObject
-    {
-        get;
-        protected set;
-    }
-    public Furniture Furniture
-    {
-        get;
-        protected set;
-    }
-
+    public LooseObject LooseObject { get; protected set; }
+    public Furniture Furniture { get; protected set; }
     World world;
-    public int X
-    {
-        get;
-        private set;
-    }
-    public int Y
-    {
-        get;
-        private set;
-    }
+    public int X { get; private set; }
+    public int Y { get; private set; }
 
     public Tile(World world, int x, int y)
     {
@@ -59,15 +38,9 @@ public class Tile
         this.Y = y;
     }
 
-    public void RegisterTileTypeChangedCallback(Action<Tile> callback)
-    {
-        cbTileTypeChanged += callback;
-    }
+    public void RegisterTileTypeChangedCallback(Action<Tile> callback) => cbTileTypeChanged += callback;
 
-    public void UnregisterTileTypeChangedCallback(Action<Tile> callback)
-    {
-        cbTileTypeChanged -= callback;
-    }
+    public void UnregisterTileTypeChangedCallback(Action<Tile> callback) => cbTileTypeChanged -= callback;
 
     public bool PlaceFurniture(Furniture objInstance)
     {
@@ -79,7 +52,7 @@ public class Tile
 
         if (Furniture != null)
         {
-            Debug.LogError("Trying to assign an installed object to a tile that already has one!");
+            Debug.LogError("Trying to assign Furniture to a tile that already has one!");
             return false;
         }
 
@@ -90,6 +63,18 @@ public class Tile
         }
 
         Furniture = objInstance;
+        return true;
+    }
+
+    public bool RemoveFurniture()
+    {
+        if (Furniture == null)
+        {
+            Debug.LogError("Trying to remove Furniture from a tile that already has one!");
+            return false;
+        }
+
+        Furniture = null;
         return true;
     }
 }

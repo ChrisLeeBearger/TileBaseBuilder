@@ -7,11 +7,7 @@ using System.Linq;
 public class WorldController : MonoBehaviour
 {
 
-    public static WorldController Instance
-    {
-        get;
-        protected set;
-    }
+    public static WorldController Instance { get; protected set; }
 
     // Sprites array for our tiles, assignable in the inspector.
     [Header("Sprites")]
@@ -22,13 +18,9 @@ public class WorldController : MonoBehaviour
     public Dictionary<Furniture, GameObject> FurnitureGameObjectMap;
     public Dictionary<string, Sprite> FurnitureSprites;
 
-    public World World
-    {
-        get;
-        protected set;
-    }
+    public World World { get; protected set; }
     // Use this for initialization
-    void Start()
+    void Awake()
     {
         if (Instance != null)
             Debug.LogError("World, Start - There should only be one world.");
@@ -213,6 +205,42 @@ public class WorldController : MonoBehaviour
 
     }
 
+    public void OnFurnitureRemoved(Furniture obj)
+    {
+        GameObject furnGo = FurnitureGameObjectMap[obj];
+        Destroy(furnGo);
+        obj.Tile.RemoveFurniture();
+        FurnitureGameObjectMap.Remove(obj);
+    }
+
+    public void UpdateFurnitureSprites(List<Tile> tiles)
+    {
+        HashSet<Tile> tilesToUpdate = new HashSet<Tile>();
+        foreach (Tile tile in tiles)
+        {
+            for (int x = -1; x < 2; x++)
+            {
+                for (int y = -1; y < 2; y++)
+                {
+                    tilesToUpdate.Add(World.GetTileAt(tile.X + x, tile.Y + y));
+                }
+            }
+        }
+        Debug.Log("Tiles to update:" + tilesToUpdate.Count);
+        foreach (Tile tile in tiles)
+            tilesToUpdate.Remove(tile);
+        Debug.Log("Tiles to update:" + tilesToUpdate.Count);
+
+        foreach (Tile tile in tilesToUpdate)
+        {
+            if (tile.Furniture == null)
+                continue;
+            var furnGo = FurnitureGameObjectMap[tile.Furniture];
+            furnGo.GetComponent<SpriteRenderer>().sprite = GetFurnitureSprite(tile.Furniture, false);
+        }
+    }
+
+
     Sprite GetFurnitureSprite(Furniture obj, bool updateNeighbors = false)
     {
         if (obj.linksToNeighbors == false)
@@ -222,7 +250,7 @@ public class WorldController : MonoBehaviour
         }
 
         // Array of fixed defined direct neighbors -> North, East, South, West
-        Vector2Int[] dirctNeighbors = new Vector2Int[] {
+        Vector2Int[] directNeighbors = new Vector2Int[] {
             new Vector2Int(0, 1),
             new Vector2Int(1, 0),
             new Vector2Int(0,-1),
@@ -230,7 +258,7 @@ public class WorldController : MonoBehaviour
         };
 
         // Array of fixed defined diagonal neighbors -> NorthEast, SouthEast, SouthWest, NorthWest
-        Vector2Int[] inDirctNeighbors = new Vector2Int[] {
+        Vector2Int[] inDirectNeighbors = new Vector2Int[] {
             new Vector2Int(1, 1),
             new Vector2Int(1, -1),
             new Vector2Int(-1,-1),
@@ -245,7 +273,7 @@ public class WorldController : MonoBehaviour
 
         for (int i = 0; i < 4; i++)
         {
-            Tile neighborTile = World.GetTileAt(obj.Tile.X + dirctNeighbors[i].x, obj.Tile.Y + dirctNeighbors[i].y);
+            Tile neighborTile = World.GetTileAt(obj.Tile.X + directNeighbors[i].x, obj.Tile.Y + directNeighbors[i].y);
             if (neighborTile != null && neighborTile.Furniture != null && obj.ObjectType == neighborTile.Furniture.ObjectType)
             {
                 if (i == 0)
@@ -260,7 +288,7 @@ public class WorldController : MonoBehaviour
 
                 if (lastNeighborConnected == true)
                 {
-                    Tile neighborTileCorner = World.GetTileAt(obj.Tile.X + inDirctNeighbors[i - 1].x, obj.Tile.Y + inDirctNeighbors[i - 1].y);
+                    Tile neighborTileCorner = World.GetTileAt(obj.Tile.X + inDirectNeighbors[i - 1].x, obj.Tile.Y + inDirectNeighbors[i - 1].y);
                     if (neighborTileCorner != null && neighborTileCorner.Furniture != null && obj.ObjectType == neighborTileCorner.Furniture.ObjectType)
                     {
                         spriteNumber += bitValue * 8;
@@ -281,7 +309,7 @@ public class WorldController : MonoBehaviour
 
         if (firstNeighborConnected && lastNeighborConnected)
         {
-            Tile neighborTileCorner = World.GetTileAt(obj.Tile.X + inDirctNeighbors[3].x, obj.Tile.Y + inDirctNeighbors[3].y);
+            Tile neighborTileCorner = World.GetTileAt(obj.Tile.X + inDirectNeighbors[3].x, obj.Tile.Y + inDirectNeighbors[3].y);
             if (neighborTileCorner != null && neighborTileCorner.Furniture != null && obj.ObjectType == neighborTileCorner.Furniture.ObjectType)
             {
                 spriteNumber += 128;

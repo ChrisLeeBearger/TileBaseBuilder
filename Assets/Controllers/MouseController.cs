@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-
+using System.Linq;
 public class MouseController : MonoBehaviour
 {
 
@@ -100,6 +100,7 @@ public class MouseController : MonoBehaviour
         if (Input.GetMouseButtonUp(0))
         {
             var tilesToEdit = WorldController.Instance.GetTilesAtCoordinates(startDragPosition, currFramePosition);
+            List<Tile> tilesFurnitureRemoved = new List<Tile>();
             // We are in InstallObjects mode
             foreach (var tile in tilesToEdit)
             {
@@ -109,10 +110,20 @@ public class MouseController : MonoBehaviour
                     WorldController.Instance.World.PlaceFurniture("greyWall", tile);
                 }
                 // We are in Tile changing mode
+                else if (buildModeTile == TileType.Ground && tile.Furniture != null)
+                {
+                    tilesFurnitureRemoved.Add(tile);
+                    WorldController.Instance.OnFurnitureRemoved(tile.Furniture);
+                }
                 else
                 {
                     tile.Type = buildModeTile;
                 }
+            }
+            if (tilesFurnitureRemoved.Count != 0)
+            {
+                Debug.Log("tilesToUpdate: " + tilesFurnitureRemoved.Count);
+                WorldController.Instance.UpdateFurnitureSprites(tilesFurnitureRemoved);
             }
             isDragging = false;
         }

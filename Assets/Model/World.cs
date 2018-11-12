@@ -8,19 +8,15 @@ public class World
 
     Tile[,] tiles;
 
-    Dictionary<string, Furniture> furniturePrototypes;
-    public int Width
-    {
-        get;
-        private set;
-    }
-    public int Height
-    {
-        get;
-        private set;
-    }
+    Dictionary<string, Furniture> _furniturePrototypes;
+    public int Width { get; private set; }
+    public int Height { get; private set; }
+    Action<Furniture> _cbFurnitureCreated;
+    Action<Tile> _cbTileChanged;
+    public Queue<Job> JobQueue;
     public World(int width = 100, int height = 100)
     {
+        JobQueue = new Queue<Job>();
         this.Width = width;
         this.Height = height;
 
@@ -31,6 +27,8 @@ public class World
             for (int y = 0; y < height; y++)
             {
                 tiles[x, y] = new Tile(this, x, y);
+                tiles[x, y].RegisterTileTypeChangedCallback(OnTileChanged);
+
             }
         }
 
@@ -42,7 +40,7 @@ public class World
 
     void CreateFurniturePrototypes()
     {
-        furniturePrototypes = new Dictionary<string, Furniture>();
+        _furniturePrototypes = new Dictionary<string, Furniture>();
         Furniture wallPrototype = Furniture.CreatePrototype(
             "greyWall",
             0,      // Impassable
@@ -51,7 +49,7 @@ public class World
             true    // Links to neighbor Walls
         );
 
-        furniturePrototypes.Add("greyWall", wallPrototype);
+        _furniturePrototypes.Add("greyWall", wallPrototype);
         Debug.Log("Prototype has been created: " + wallPrototype.ObjectType);
     }
 
@@ -70,17 +68,22 @@ public class World
     public void PlaceFurniture(string objectType, Tile tile)
     {
         // Check if we have a prototype for the given objectType string
-        if (furniturePrototypes.ContainsKey(objectType) == false)
+        if (_furniturePrototypes.ContainsKey(objectType) == false)
         {
             Debug.LogError("FurniturePrototypes does not contain a prototype for key: " + objectType);
             return;
         }
 
-        Furniture obj = Furniture.PlaceInstance(furniturePrototypes[objectType], tile);
+        Furniture obj = Furniture.PlaceInstance(_furniturePrototypes[objectType], tile);
 
         // Create the visual GameObject if we placed the object successfully
         if (obj != null)
+        {
             WorldController.Instance.OnFurnitureCreated(obj);
+            if (_cbFurnitureCreated != null)
+                _cbFurnitureCreated(obj);
+        }
+
     }
 
     public void RandomizeTiles()
@@ -96,5 +99,19 @@ public class World
                     tiles[x, y].Type = TileType.Gras;
             }
         }
+    }
+    public void RegisterFurnitureCallback(Action<Furniture> callbackFunction) => _cbFurnitureCreated += callbackFunction;
+
+    public void UnregisterFurnitureCallback(Action<Furniture> callbackFunction) => _cbFurnitureCreated -= callbackFunction;
+
+    public void RegisterTileCallback(Action<Tile> callbackFunction) => _cbTileChanged += callbackFunction;
+
+    public void UnregisterTileCallback(Action<Tile> callbackFunction) => _cbTileChanged -= callbackFunction;
+
+    void OnTileChanged(Tile tile)
+    {
+        if (_cbTileChanged == null)
+            return;
+        _cbTileChanged(tile);
     }
 }

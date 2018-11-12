@@ -52,5 +52,11 @@
         "ProjectSettings/":true,
         "temp/":true,
         "Temp/":true
-    }
+    },
+    "cSpell.words": [
+        "coord",
+        "furnitures",
+        "glaude",
+        "proto"
+    ]
 }

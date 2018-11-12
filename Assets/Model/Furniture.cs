@@ -6,17 +6,9 @@ using System;
 public class Furniture
 {
 
-    public Tile Tile
-    {
-        get;
-        protected set;
-    }
+    public Tile Tile { get; protected set; }
 
-    public string ObjectType
-    {
-        get;
-        protected set;
-    }
+    public string ObjectType { get; protected set; }
 
     float movementCost;
 
@@ -28,9 +20,7 @@ public class Furniture
 
     public bool linksToNeighbors { get; protected set; }
 
-    protected Furniture()
-    {
-    }
+    protected Furniture() { }
     static public Furniture CreatePrototype(string ObjectType, float movementCost = 1f, int width = 1, int height = 1, bool linksToNeighbors = false)
     {
         Furniture obj = new Furniture();
@@ -51,13 +41,13 @@ public class Furniture
             Debug.LogError("PlaceInstance --- Position Validity Function returned FALSE.");
             return null;
         }
+
         Furniture obj = new Furniture();
         obj.ObjectType = proto.ObjectType;
         obj.movementCost = proto.movementCost;
         obj.width = proto.width;
         obj.height = proto.height;
         obj.linksToNeighbors = proto.linksToNeighbors;
-
         obj.Tile = tile;
 
         if (tile.PlaceFurniture(obj) == false)
@@ -69,27 +59,14 @@ public class Furniture
             // (It will be garbage collected.)
             return null;
         }
-
         return obj;
     }
-    public void RegisterOnChangedCallback(Action<Furniture> callbackFunction)
-    {
-        cbOnChanged += callbackFunction;
-    }
+    public void RegisterOnChangedCallback(Action<Furniture> callbackFunction) => cbOnChanged += callbackFunction;
 
-    public void UnregisterOnChangedCallback(Action<Furniture> callbackFunction)
-    {
-        cbOnChanged -= callbackFunction;
-    }
+    public void UnregisterOnChangedCallback(Action<Furniture> callbackFunction) => cbOnChanged -= callbackFunction;
 
-    public bool IsValidPosition(Tile tile)
-    {
-        // Make sure the Tile below is, is of Type Floor and no Furniture is assigned to the Tile
-        if (tile.Type != TileType.Floor || tile.Furniture != null)
-            return false;
-
-        return true;
-    }
+    // Make sure the Tile below is of Type Floor and is not holding a Furniture
+    public bool IsValidPosition(Tile tile) => (tile.Type == TileType.Floor && tile.Furniture == null);
 
     public bool IsValidPosition_Door(Tile tile)
     {
