@@ -13,14 +13,16 @@ public class World
     public int Height { get; private set; }
     Action<Furniture> _cbFurnitureCreated;
     Action<Tile> _cbTileChanged;
+    // TODO: Most likely this will be replaced with a dedicated class for managing job queues
+
     public Queue<Job> JobQueue;
     public World(int width = 100, int height = 100)
     {
         JobQueue = new Queue<Job>();
+        tiles = new Tile[width, height];
+
         this.Width = width;
         this.Height = height;
-
-        tiles = new Tile[width, height];
 
         for (int x = 0; x < width; x++)
         {
@@ -31,11 +33,8 @@ public class World
 
             }
         }
-
         Debug.Log("World created with " + (width * height) + " tiles.");
-
         CreateFurniturePrototypes();
-
     }
 
     void CreateFurniturePrototypes()
@@ -48,7 +47,6 @@ public class World
             1,      // Height
             true    // Links to neighbor Walls
         );
-
         _furniturePrototypes.Add("greyWall", wallPrototype);
         Debug.Log("Prototype has been created: " + wallPrototype.ObjectType);
     }
@@ -79,7 +77,6 @@ public class World
         // Create the visual GameObject if we placed the object successfully
         if (obj != null)
         {
-            WorldController.Instance.OnFurnitureCreated(obj);
             if (_cbFurnitureCreated != null)
                 _cbFurnitureCreated(obj);
         }
@@ -113,5 +110,10 @@ public class World
         if (_cbTileChanged == null)
             return;
         _cbTileChanged(tile);
+    }
+
+    public bool IsFurniturePlacementValid(string furnitureType, Tile tile)
+    {
+        return _furniturePrototypes[furnitureType].IsValidPosition(tile);
     }
 }

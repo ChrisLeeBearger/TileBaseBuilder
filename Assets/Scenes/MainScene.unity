@@ -210,9 +210,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 549c48b35b5dfbf4390bf6b4b1371a7a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  circleCursorPrefab: {fileID: 1320812771624164, guid: b85ac9e8fafa4ae47b8497313fe3863c,
+  _circleCursorPrefab: {fileID: 1320812771624164, guid: b85ac9e8fafa4ae47b8497313fe3863c,
     type: 2}
-  circleCursorParent: {fileID: 308293812}
+  _circleCursorParent: {fileID: 308293812}
 --- !u!1 &372742444
 GameObject:
   m_ObjectHideFlags: 0

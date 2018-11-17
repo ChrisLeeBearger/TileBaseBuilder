@@ -8,7 +8,7 @@ using System;
 public class Job
 {
 
-    Tile _tile;
+    public Tile Tile { get; protected set; }
 
     float _jobTime = 1f;
 
@@ -17,9 +17,10 @@ public class Job
 
     public Job(Tile tile, Action<Job> cbJobComplete, float jobTime = 1f)
     {
-        _tile = tile;
+        Tile = tile;
         _cbJobComplete += cbJobComplete;
         _jobTime = jobTime;
+        Tile.PendingFurnitureJob = this;
     }
 
     public void RegisterJobCompleteCallback(Action<Job> cb) => _cbJobComplete += cb;

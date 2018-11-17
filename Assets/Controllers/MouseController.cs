@@ -5,41 +5,37 @@ using UnityEngine.EventSystems;
 using System.Linq;
 public class MouseController : MonoBehaviour
 {
-
-    public GameObject circleCursorPrefab;
-    public GameObject circleCursorParent;
-    Vector3 currFramePosition;
-    Vector3 lastFramePosition;
-    Vector3 startDragPosition;
-    bool isDragging = false;
-    Tile tileUnderMouse;
-    Tile tileLastFrame;
-    bool buildModeIsObjects;
-
-    TileType buildModeTile = TileType.Floor;
-    List<GameObject> dragPreviewGameObjects;
+    public GameObject _circleCursorPrefab;
+    public GameObject _circleCursorParent;
+    Vector3 _currFramePosition;
+    Vector3 _lastFramePosition;
+    Vector3 _startDragPosition;
+    bool _isDragging = false;
+    Tile _tileUnderMouse;
+    Tile _tileLastFrame;
+    List<GameObject> _dragPreviewGameObjects;
 
     // Use this for initialization
     void Start()
     {
-        dragPreviewGameObjects = new List<GameObject>();
+        _dragPreviewGameObjects = new List<GameObject>();
         // Preload 100 circleCursors when loading the scene
-        SimplePool.Preload(circleCursorPrefab, 100, circleCursorParent);
+        SimplePool.Preload(_circleCursorPrefab, 100, _circleCursorParent);
     }
 
     // Update is called once per frame
     void Update()
     {
-        currFramePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        tileUnderMouse = WorldController.Instance.GetTileAtCoordinates(currFramePosition);
+        _currFramePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        _tileUnderMouse = WorldController.Instance.GetTileAtCoordinates(_currFramePosition);
 
         UpdateCameraMovement();
         // UpdateCursor();
         UpdateDrag();
         UpdateCameraZooming();
 
-        lastFramePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        tileLastFrame = tileUnderMouse;
+        _lastFramePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        _tileLastFrame = _tileUnderMouse;
     }
 
     void UpdateCameraMovement()
@@ -47,7 +43,7 @@ public class MouseController : MonoBehaviour
         // Handle screen dragging (camera movement)
         if (Input.GetMouseButton(2))
         {
-            var cameraMovement = lastFramePosition - currFramePosition;
+            var cameraMovement = _lastFramePosition - _currFramePosition;
             Camera.main.transform.Translate(cameraMovement);
         }
     }
@@ -60,102 +56,58 @@ public class MouseController : MonoBehaviour
 
     void UpdateDrag()
     {
+        CleanUpDraggingCursors();
         // If we are over a UI element, then skip this function
-        if (EventSystem.current.IsPointerOverGameObject())
+        if (EventSystem.current.IsPointerOverGameObject() && _isDragging == false)
+        {
             return;
+        }
 
         // Start Handle actions (left mouse clicks)
         if (Input.GetMouseButtonDown(0))
         {
-            startDragPosition = currFramePosition;
-            GameObject go = SimplePool.Spawn(circleCursorPrefab, new Vector3(tileUnderMouse.X, tileUnderMouse.Y, 0), Quaternion.identity);
-            dragPreviewGameObjects.Add(go);
-            isDragging = true;
+            _startDragPosition = _currFramePosition;
+            GameObject go = SimplePool.Spawn(_circleCursorPrefab, new Vector3(_tileUnderMouse.X, _tileUnderMouse.Y, 0), Quaternion.identity);
+            _dragPreviewGameObjects.Add(go);
+            _isDragging = true;
         }
 
-        while (dragPreviewGameObjects.Count > 0 && (isDragging == false || tileLastFrame != tileUnderMouse))
-        {
-            GameObject go = dragPreviewGameObjects[0];
-            dragPreviewGameObjects.RemoveAt(0);
-            SimplePool.Despawn(go);
-        }
-
-        if (Input.GetMouseButton(0) && tileLastFrame != tileUnderMouse)
+        if (Input.GetMouseButton(0) && _tileLastFrame != _tileUnderMouse)
         {
             // Display a preview of the drag area
-            var tilesToEdit = WorldController.Instance.GetTilesAtCoordinates(startDragPosition, currFramePosition);
+            Tile[] tilesToEdit = WorldController.Instance.GetTilesAtCoordinates(_startDragPosition, _currFramePosition);
             if (tilesToEdit != null)
             {
-
                 foreach (var tile in tilesToEdit)
                 {
-                    GameObject go = SimplePool.Spawn(circleCursorPrefab, new Vector3(tile.X, tile.Y, 0), Quaternion.identity);
-                    dragPreviewGameObjects.Add(go);
+                    GameObject go = SimplePool.Spawn(_circleCursorPrefab, new Vector3(tile.X, tile.Y, 0), Quaternion.identity);
+                    _dragPreviewGameObjects.Add(go);
                 }
-
             }
         }
 
         // End Handle actions (left mouse clicks)
         if (Input.GetMouseButtonUp(0))
         {
-            var tilesToEdit = WorldController.Instance.GetTilesAtCoordinates(startDragPosition, currFramePosition);
-            List<Tile> tilesFurnitureRemoved = new List<Tile>();
+            BuildModeController buildModeController = GameObject.FindObjectOfType<BuildModeController>();
+            Tile[] tilesToEdit = WorldController.Instance.GetTilesAtCoordinates(_startDragPosition, _currFramePosition);
             // We are in InstallObjects mode
             foreach (var tile in tilesToEdit)
             {
-                if (buildModeIsObjects)
-                {
-                    // Create an installed object
-                    WorldController.Instance.World.PlaceFurniture("greyWall", tile);
-                }
-                // We are in Tile changing mode
-                else if (buildModeTile == TileType.Ground && tile.Furniture != null)
-                {
-                    tilesFurnitureRemoved.Add(tile);
-                    WorldController.Instance.OnFurnitureRemoved(tile.Furniture);
-                }
-                else
-                {
-                    tile.Type = buildModeTile;
-                }
+                buildModeController.DoBuild(tile);
             }
-            if (tilesFurnitureRemoved.Count != 0)
-            {
-                Debug.Log("tilesToUpdate: " + tilesFurnitureRemoved.Count);
-                WorldController.Instance.UpdateFurnitureSprites(tilesFurnitureRemoved);
-            }
-            isDragging = false;
+            _isDragging = false;
         }
     }
 
 
-    public void SetModeBuildFloor()
+    private void CleanUpDraggingCursors()
     {
-        buildModeIsObjects = false;
-        buildModeTile = TileType.Floor;
+        while (_dragPreviewGameObjects.Count > 0 && (_isDragging == false || _tileLastFrame != _tileUnderMouse))
+        {
+            GameObject go = _dragPreviewGameObjects[0];
+            _dragPreviewGameObjects.RemoveAt(0);
+            SimplePool.Despawn(go);
+        }
     }
-
-    public void SetModeBuildWalls()
-    {
-        buildModeIsObjects = true;
-    }
-
-    public void SetModeBulldoze()
-    {
-        buildModeIsObjects = false;
-        buildModeTile = TileType.Ground;
-    }
-
-    // public void UpdateCursor()
-    // {
-    //     // Update the cursor graphic which indicates the selected Tile
-    //     if (tileUnderMouse != null)
-    //     {
-    //         circleCursor.SetActive(true);
-    //         circleCursor.transform.position = new Vector2(tileUnderMouse.X, tileUnderMouse.Y);
-    //     }
-    //     else
-    //         circleCursor.SetActive(false);
-    // }
 }

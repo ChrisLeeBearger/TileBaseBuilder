@@ -16,7 +16,7 @@ public class Furniture
     int height;
     Action<Furniture> cbOnChanged;
 
-    Func<Tile, bool> funcPositionValidation;
+    private Func<Tile, bool> _funcPositionValidation;
 
     public bool linksToNeighbors { get; protected set; }
 
@@ -30,13 +30,13 @@ public class Furniture
         obj.width = width;
         obj.height = height;
         obj.linksToNeighbors = linksToNeighbors;
-        obj.funcPositionValidation = obj.IsValidPosition;
+        obj._funcPositionValidation = obj.__IsValidPosition;
         return obj;
     }
 
     static public Furniture PlaceInstance(Furniture proto, Tile tile)
     {
-        if (proto.funcPositionValidation(tile) == false)
+        if (proto._funcPositionValidation(tile) == false)
         {
             Debug.LogError("PlaceInstance --- Position Validity Function returned FALSE.");
             return null;
@@ -65,10 +65,14 @@ public class Furniture
 
     public void UnregisterOnChangedCallback(Action<Furniture> callbackFunction) => cbOnChanged -= callbackFunction;
 
-    // Make sure the Tile below is of Type Floor and is not holding a Furniture
-    public bool IsValidPosition(Tile tile) => (tile.Type == TileType.Floor && tile.Furniture == null);
+    public bool IsValidPosition(Tile tile) => _funcPositionValidation(tile);
 
-    public bool IsValidPosition_Door(Tile tile)
+    // ! These functions should never be called directly
+    // ! So they probably should not be public functions in the future
+    // Make sure the Tile below is of Type Floor and is not holding a Furniture
+    public bool __IsValidPosition(Tile tile) => (tile.Type == TileType.Floor && tile.Furniture == null);
+
+    public bool __IsValidPosition_Door(Tile tile)
     {
         // Make sure we have a pair of East/West or North/West Walls next to us
         Debug.LogError("IsValidPosition_Door - - - Implement me.");

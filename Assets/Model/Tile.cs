@@ -6,11 +6,10 @@ using System;
 public enum TileType { Empty, Ground, Gras, Floor, Water, Stone };
 public class Tile
 {
-
-
     Action<Tile> cbTileTypeChanged;
 
     TileType type = TileType.Empty;
+    public Job PendingFurnitureJob;
     public TileType Type
     {
         get { return type; }
