@@ -5,22 +5,22 @@ using System;
 
 public class World
 {
-
     Tile[,] tiles;
-
     Dictionary<string, Furniture> _furniturePrototypes;
+    List<Character> characters;
     public int Width { get; private set; }
     public int Height { get; private set; }
     Action<Furniture> _cbFurnitureCreated;
     Action<Tile> _cbTileChanged;
-    // TODO: Most likely this will be replaced with a dedicated class for managing job queues
+    Action<Character> _cbCharacterCreated;
+    public JobQueue JobQueue;
 
-    public Queue<Job> JobQueue;
     public World(int width = 100, int height = 100)
     {
-        JobQueue = new Queue<Job>();
-        tiles = new Tile[width, height];
+        JobQueue = new JobQueue();
+        characters = new List<Character>();
 
+        tiles = new Tile[width, height];
         this.Width = width;
         this.Height = height;
 
@@ -35,6 +35,21 @@ public class World
         }
         Debug.Log("World created with " + (width * height) + " tiles.");
         CreateFurniturePrototypes();
+    }
+
+    public void Update(float deltaTime)
+    {
+        foreach (Character c in characters)
+            c.Update(deltaTime);
+    }
+
+    public Character CreateCharacter(Tile tile)
+    {
+        Character c = new Character(tile);
+        characters.Add(c);
+        if (_cbCharacterCreated != null)
+            _cbCharacterCreated(c);
+        return c;
     }
 
     void CreateFurniturePrototypes()
@@ -105,6 +120,10 @@ public class World
 
     public void UnregisterTileCallback(Action<Tile> callbackFunction) => _cbTileChanged -= callbackFunction;
 
+    public void RegisterCharacterCallback(Action<Character> callbackFunction) => _cbCharacterCreated += callbackFunction;
+
+    public void UnregisterCharacterCallback(Action<Character> callbackFunction) => _cbCharacterCreated -= callbackFunction;
+
     void OnTileChanged(Tile tile)
     {
         if (_cbTileChanged == null)
@@ -115,5 +134,13 @@ public class World
     public bool IsFurniturePlacementValid(string furnitureType, Tile tile)
     {
         return _furniturePrototypes[furnitureType].IsValidPosition(tile);
+    }
+
+    public Furniture GetFurniturePrototype(string objectType)
+    {
+        if (_furniturePrototypes.ContainsKey(objectType) == false)
+            Debug.LogError("No furniture with type: " + objectType);
+
+        return _furniturePrototypes[objectType];
     }
 }

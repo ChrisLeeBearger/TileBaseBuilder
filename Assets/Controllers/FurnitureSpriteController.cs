@@ -37,7 +37,9 @@ public class FurnitureSpriteController : MonoBehaviour
         furnGo.transform.position = new Vector3(obj.Tile.X, obj.Tile.Y, -1);
         furnGo.transform.SetParent(this.transform, true);
 
-        furnGo.AddComponent<SpriteRenderer>().sprite = GetFurnitureSprite(obj, true);
+        SpriteRenderer sr = furnGo.AddComponent<SpriteRenderer>();
+        sr.sprite = GetFurnitureSprite(obj, true);
+        sr.sortingLayerName = "Furniture";
 
         obj.RegisterOnChangedCallback(OnFurnitureChanged);
     }
@@ -77,7 +79,7 @@ public class FurnitureSpriteController : MonoBehaviour
         }
     }
 
-    Sprite GetFurnitureSprite(Furniture obj, bool updateNeighbors = false)
+    public Sprite GetFurnitureSprite(Furniture obj, bool updateNeighbors = false)
     {
         if (obj.linksToNeighbors == false)
         {
@@ -156,12 +158,32 @@ public class FurnitureSpriteController : MonoBehaviour
                 }
             }
         }
+
+        // Check if the sprite can be found
+        if (FurnitureSprites.ContainsKey(obj.ObjectType + "_" + spriteNumber) == false)
+        {
+            Debug.LogError("GetFurnitureSprite - - Sprite not found for: " + obj.ObjectType + "_" + spriteNumber);
+            return null;
+        }
         return FurnitureSprites[obj.ObjectType + "_" + spriteNumber];
     }
 
     void OnFurnitureChanged(Furniture obj)
     {
 
+    }
+
+    public Sprite GetSpriteForFurniture(string objectType)
+    {
+        if (FurnitureSprites.ContainsKey(objectType))
+            return FurnitureSprites[objectType];
+        else if (FurnitureSprites.ContainsKey(objectType + "_0"))
+            return FurnitureSprites[objectType + "_0"];
+        else
+        {
+            Debug.LogError("GetSpriteForFurniture - - Sprite not found for: " + objectType);
+            return null;
+        }
     }
 }
 

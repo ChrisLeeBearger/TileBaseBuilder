@@ -27,9 +27,14 @@ public class WorldController : MonoBehaviour
         Instance = this;
 
         World = new World();
-
         // Center the camera on game start
         Camera.main.transform.position = new Vector3(World.Width / 2, World.Height / 2, -15);
+    }
+
+    void Update()
+    {
+        // TODO: Should also implement ways to manipulate time (pause, slowdown, fastforward)
+        World.Update(Time.deltaTime);
     }
 
     public Tile GetTileAtCoordinates(Vector3 coord)

@@ -40,7 +40,7 @@ public class BuildModeController : MonoBehaviour
             // We are saving the furniture type in a local variable as at the time the job is executed
             // the _buildModObjectType variable most likely has changed
             string furnitureType = _buildModObjectType;
-            Job job = new Job(tile, (theJob) =>
+            Job job = new Job(tile, furnitureType, (theJob) =>
             {
                 WorldController.Instance.World.PlaceFurniture(furnitureType, tile);
             });

@@ -39,7 +39,9 @@ public class TileSpriteController : MonoBehaviour
 
                 // Add a SpriteRender so that we can define a Sprite
                 // Add a default sprite for empty tiles.
-                tileGo.AddComponent<SpriteRenderer>().sprite = tileSprites[0];
+                SpriteRenderer sr = tileGo.AddComponent<SpriteRenderer>();
+                sr.sprite = tileSprites[0];
+                sr.sortingLayerName = "Tiles";
 
                 tileData.RegisterTileTypeChangedCallback(OnTileTypeChanged);
             }

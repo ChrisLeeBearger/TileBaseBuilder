@@ -7,25 +7,24 @@ using System;
 // placing a Furniture, moving stored inventory, crafting at a workbench, ..
 public class Job
 {
-
     public Tile Tile { get; protected set; }
-
     float _jobTime = 1f;
-
     Action<Job> _cbJobComplete;
     Action<Job> _cbJobCancel;
-
-    public Job(Tile tile, Action<Job> cbJobComplete, float jobTime = 1f)
+    public string JobObjectType { get; protected set; }
+    public Job(Tile tile, string jobObjectType, Action<Job> cbJobComplete, float jobTime = 1f)
     {
         Tile = tile;
         _cbJobComplete += cbJobComplete;
         _jobTime = jobTime;
+        JobObjectType = jobObjectType;
         Tile.PendingFurnitureJob = this;
     }
 
     public void RegisterJobCompleteCallback(Action<Job> cb) => _cbJobComplete += cb;
     public void RegisterJobCancelCallback(Action<Job> cb) => _cbJobCancel += cb;
-
+    public void UnregisterJobCompleteCallback(Action<Job> cb) => _cbJobComplete -= cb;
+    public void UnregisterJobCancelCallback(Action<Job> cb) => _cbJobCancel -= cb;
     public void DoWork(float workTime)
     {
         _jobTime -= workTime;
