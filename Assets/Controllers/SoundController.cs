@@ -2,18 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using Assets.Events;
 
 public class SoundController : MonoBehaviour
 {
     float _soundCooldown = 0;
+
+    // audioclip assigned via unity editor
     public AudioClip BuildFloor;
     public AudioClip BuildWall;
 
     // Use this for initialization
     void Start()
     {
-        WorldController.Instance.World.RegisterFurnitureCallback(OnFurnitureCreated);
-        WorldController.Instance.World.RegisterTileCallback(OnTileTypeChange);
+        WorldController.Instance.World.FurnitureCreated += OnFurnitureCreated;
+        WorldController.Instance.World.TileChanged += OnTileTypeChange;
     }
 
     // Update is called once per frame
@@ -22,13 +25,13 @@ public class SoundController : MonoBehaviour
         _soundCooldown -= Time.deltaTime;
     }
 
-    void OnTileTypeChange(Tile tile)
+    void OnTileTypeChange(object sender, TileChangedEventArgs args)
     {
         if (CanPlaySound())
             AudioSource.PlayClipAtPoint(BuildFloor, Camera.main.transform.position);
     }
 
-    void OnFurnitureCreated(Furniture furniture)
+    void OnFurnitureCreated(object sender, FurnitureCreatedEventArgs args)
     {
         if (CanPlaySound())
             AudioSource.PlayClipAtPoint(BuildWall, Camera.main.transform.position);

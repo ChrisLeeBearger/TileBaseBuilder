@@ -7,12 +7,16 @@ public class MouseController : MonoBehaviour
 {
     public GameObject _circleCursorPrefab;
     public GameObject _circleCursorParent;
+
     Vector3 _currFramePosition;
     Vector3 _lastFramePosition;
     Vector3 _startDragPosition;
+
     bool _isDragging = false;
+
     Tile _tileUnderMouse;
     Tile _tileLastFrame;
+
     List<GameObject> _dragPreviewGameObjects;
 
     // Use this for initialization

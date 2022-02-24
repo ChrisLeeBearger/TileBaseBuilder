@@ -1,47 +1,52 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+
 // This bare-bone controller is mostly just going to piggyback on FurnitureSpriteController as we do not yet
 // fully know what our job system is going to look like in the end
 public class JobSpriteController : MonoBehaviour
 {
-    private World _world { get { return WorldController.Instance.World; } }
-    FurnitureSpriteController _furnitureSpriteController;
+    private World _world => WorldController.Instance.World;
+    private FurnitureSpriteController _furnitureSpriteController;
     private Dictionary<Job, GameObject> _jobGameObjectMap;
 
     void Start()
     {
         _jobGameObjectMap = new Dictionary<Job, GameObject>();
         _furnitureSpriteController = GameObject.FindObjectOfType<FurnitureSpriteController>();
-        WorldController.Instance.World.JobQueue.RegisterJobCreationCallback(OnJobCreated);
+        _world.JobQueue.RegisterJobCreationCallback(OnJobCreated);
     }
 
     private void OnJobCreated(Job job)
     {
-        GameObject jobGo = new GameObject();
-        _jobGameObjectMap.Add(job, jobGo);
+        GameObject jobGameObject = new();
+        _jobGameObjectMap.Add(job, jobGameObject);
 
-        jobGo.name = "JOB_" + job.JobObjectType + " " + job.Tile.X + " " + job.Tile.Y;
-        jobGo.transform.position = new Vector3(job.Tile.X, job.Tile.Y, 0);
-        jobGo.transform.SetParent(this.transform, true);
+        jobGameObject.name = "JOB_" + job.JobObjectType + " " + job.Tile.X + " " + job.Tile.Y;
+        jobGameObject.transform.position = new Vector3(job.Tile.X, job.Tile.Y, 0);
+        jobGameObject.transform.SetParent(this.transform, true);
 
-        SpriteRenderer sr = jobGo.AddComponent<SpriteRenderer>();
-        sr.sprite = _furnitureSpriteController.GetSpriteForFurniture(job.JobObjectType);
-        sr.sortingLayerName = "Jobs";
+        SpriteRenderer spriteRenderer = jobGameObject.AddComponent<SpriteRenderer>();
+        spriteRenderer.sprite = _furnitureSpriteController.GetSpriteForFurniture(job.JobObjectType);
+        spriteRenderer.sortingLayerName = "Jobs";
         // Set the sprite transparent
-        sr.color = new Color(0.8f, 1f, 0.8f, 0.3f);
+        spriteRenderer.color = new Color(0.8f, 1f, 0.8f, 0.3f);
 
-        job.RegisterJobCompleteCallback(OnJobEnded);
-        job.RegisterJobCancelCallback(OnJobEnded);
+        // register event callback
+        job.JobCompleted += OnJobEnded;
+        job.JobCanceled += OnJobEnded;
     }
 
     // This executes whether a job was COMPLETED or CANCELED
     // It simply removes the preview GameObject of the job
-    private void OnJobEnded(Job job)
+    private void OnJobEnded(object sender, EventArgs args)
     {
-        GameObject jobGo = _jobGameObjectMap[job];
-        job.UnregisterJobCancelCallback(OnJobEnded);
-        job.UnregisterJobCompleteCallback(OnJobEnded);
-        Destroy(jobGo);
+        Job job = sender as Job;
+
+        job.JobCompleted -= OnJobEnded;
+        job.JobCanceled -= OnJobEnded;
+
+        GameObject jobGameObject = _jobGameObjectMap[job];
+        Destroy(jobGameObject);
     }
 }

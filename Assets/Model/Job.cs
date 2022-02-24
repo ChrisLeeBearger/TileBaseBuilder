@@ -7,37 +7,36 @@ using System;
 // placing a Furniture, moving stored inventory, crafting at a workbench, ..
 public class Job
 {
-    public Tile Tile { get; protected set; }
     float _jobTime = 1f;
-    Action<Job> _cbJobComplete;
-    Action<Job> _cbJobCancel;
+
+    public Tile Tile { get; protected set; }
+
     public string JobObjectType { get; protected set; }
-    public Job(Tile tile, string jobObjectType, Action<Job> cbJobComplete, float jobTime = 1f)
+
+    public event EventHandler JobCompleted;
+    public event EventHandler JobCanceled;
+
+    public Job(Tile tile, string jobObjectType, EventHandler cbJobComplete, float jobTime = 1f)
     {
         Tile = tile;
-        _cbJobComplete += cbJobComplete;
+        JobCompleted += cbJobComplete;
         _jobTime = jobTime;
         JobObjectType = jobObjectType;
         Tile.PendingFurnitureJob = this;
     }
 
-    public void RegisterJobCompleteCallback(Action<Job> cb) => _cbJobComplete += cb;
-    public void RegisterJobCancelCallback(Action<Job> cb) => _cbJobCancel += cb;
-    public void UnregisterJobCompleteCallback(Action<Job> cb) => _cbJobComplete -= cb;
-    public void UnregisterJobCancelCallback(Action<Job> cb) => _cbJobCancel -= cb;
+    private void OnJobCompleted() => JobCompleted?.Invoke(this, EventArgs.Empty);
+    private void OnJobCanceled() => JobCanceled?.Invoke(this, EventArgs.Empty);
+
     public void DoWork(float workTime)
     {
         _jobTime -= workTime;
 
-        if (_jobTime <= 0 && _cbJobComplete != null)
-            _cbJobComplete(this);
+        if (_jobTime <= 0)
+            OnJobCompleted();
     }
 
-    public void CancelJob()
-    {
-        if (_cbJobCancel != null)
-            _cbJobCancel(this);
+    public void CancelJob() {
+        OnJobCanceled();
     }
 }
-
-

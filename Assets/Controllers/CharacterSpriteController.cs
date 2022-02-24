@@ -1,27 +1,32 @@
-﻿using System.Collections;
+﻿using Assets.Events;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class CharacterSpriteController : MonoBehaviour
 {
+    private World _world => WorldController.Instance.World;
 
-    public Dictionary<Character, GameObject> CharacterGameObjectMap;
-    public Dictionary<string, Sprite> CharacterSprites;
-    private World _world { get { return WorldController.Instance.World; } }
+    public Dictionary<Character, GameObject> CharacterGameObjectMap { get; private set; } = new();
+    public Dictionary<string, Sprite> CharacterSprites { get; private set; } = new();
+
     // Use this for initialization
     void Start()
     {
         LoadCharacterSprites();
-        CharacterGameObjectMap = new Dictionary<Character, GameObject>();
-        _world.RegisterCharacterCallback(OnCharacterCreated);
+        _world.CharacterCreated += OnCharacterCreated;
+
         // TODO: This should be moved somewhere else in the future
-        Character c = _world.CreateCharacter(_world.GetTileAt(_world.Width / 2, _world.Height / 2));
+        for (int i = 0; i < 10; i++) {
+            Character c = _world.CreateCharacter(_world.GetTileAt(_world.Width / 2, _world.Height / 2));
+        }
         // c.SetDestination(_world.GetTileAt(_world.Width / 2 + 5, _world.Height / 2 + 5));
     }
 
+    // load sprites from Resources folder
     void LoadCharacterSprites()
     {
-        CharacterSprites = new Dictionary<string, Sprite>();
         Sprite[] s = Resources.LoadAll<Sprite>("Characters/");
 
         foreach (var sprite in s)
@@ -29,26 +34,34 @@ public class CharacterSpriteController : MonoBehaviour
             CharacterSprites.Add(sprite.name, sprite);
         }
     }
-    public void OnCharacterCreated(Character c)
-    {
-        GameObject charGo = new GameObject();
 
-        CharacterGameObjectMap.Add(c, charGo);
-        charGo.name = "Character";
-        charGo.transform.position = new Vector2(c.X, c.Y);
-        charGo.transform.SetParent(this.transform, true);
-        SpriteRenderer charSr = charGo.AddComponent<SpriteRenderer>();
+    public void OnCharacterCreated(object sender, CharacterCreatedEventArgs args)
+    {
+        // create the game object for our character, position it in the world set name and parent in the editor
+        GameObject charGameObject = new GameObject();
+        charGameObject.name = "Character";
+        charGameObject.transform.position = new Vector2(args.Character.X, args.Character.Y);
+        charGameObject.transform.SetParent(this.transform, true);
+
+        // add sprite render, select sprite and set sorting layer
+        SpriteRenderer charSr = charGameObject.AddComponent<SpriteRenderer>();
         charSr.sprite = CharacterSprites["player"];
         charSr.sortingLayerName = "Characters";
-        Debug.Log("Created character: " + charGo.name);
-        c.RegisterCharacterChangedCallback(OnCharacterChanged);
+
+        CharacterGameObjectMap.Add(args.Character, charGameObject);
+        Debug.Log("Created character: " + charGameObject.name);
+
+        args.Character.CharacterChanged += OnCharacterChanged;
     }
 
-    public void OnCharacterRemoved(Character c)
+    public void OnCharacterRemoved(Character character)
     {
-        GameObject charGo = CharacterGameObjectMap[c];
-        Destroy(charGo);
-        CharacterGameObjectMap.Remove(c);
+        GameObject charGameObject = CharacterGameObjectMap[character];
+
+        Destroy(charGameObject);
+        CharacterGameObjectMap.Remove(character);
+
+        character.CharacterChanged -= OnCharacterChanged;
     }
 
     // ! Currently not useable as it was just taken over from FurnitureSpriteController
@@ -65,14 +78,17 @@ public class CharacterSpriteController : MonoBehaviour
         }
     }
 
-    void OnCharacterChanged(Character c)
+    void OnCharacterChanged(object sender, EventArgs args)
     {
-        if (CharacterGameObjectMap.ContainsKey(c) == false)
+        Character character = (Character)sender;
+
+        if (CharacterGameObjectMap.ContainsKey(character) == false)
         {
             Debug.LogError("CharacterSpriteController::OnCharacterChanged -- trying to change visuals for a character not in CharacterGameObjectMap.");
             return;
         }
-        GameObject charGo = CharacterGameObjectMap[c];
-        charGo.transform.position = new Vector2(c.X, c.Y);
+
+        GameObject charGo = CharacterGameObjectMap[character];
+        charGo.transform.position = new Vector2(character.X, character.Y);
     }
 }

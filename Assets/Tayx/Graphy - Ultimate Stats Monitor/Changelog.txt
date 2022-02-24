@@ -1,4 +1,44 @@
 -----------------------------
+v1.5.2
+
+- Removed asmdefs to avoid missing reference issues in new Unity alpha versions.
+- Improvements avgFps calculation, changed list to array (thanks @Kaladrius2trip).
+
+-----------------------------
+v1.5.1
+
+- Hide Graphy in Game view when it's be disabled on startup.
+- Fixed error if no camera is present in the scene.
+- Added SceneManager namespace so to avoid possible conflicts.
+- Added support for asmdefs (thanks @QSFW).
+
+-----------------------------
+v1.5
+
+- Fixed a number alignment in the audio module (thanks @SuperPenguin).
+- Refactored some code to avoid warnings with the new NET framework 4.0.
+- Shader sorting fix for Screen Space - Camera.
+- Fixed a possible Null Reference Error in the debugger (thanks @strawlink).
+- Fixed import settings in 2 textures (thanks @strawlink).
+- Renamed all Action into System.Action to avoid possible namespace conflicts.
+- Fixed the int rounding to prevent 59.99999FPS from turning into 59FPS (thanks @Rockylars).
+
+-----------------------------
+v1.4.3
+
+- Renamed all the classes with the "G_" prefix to avoid namespace issues with external code (thanks @Rockylars).
+- Refactored some code and added explanations and regions in the G_ShaderGraph class.
+- Assigned all the variables in their declaration to avoid a new NET framework warning.
+
+-----------------------------
+v1.4.2
+
+- Added the option to disable hotkeys.
+- Disabled hotkey check when Editor is not focused (thanks @Rockylars).
+- Refatored and cleaned up code (thanks @Rockylars).
+- Fixed a bug where if the app was defocused and focused back, it would reset Graphy's module active values (thanks @Rockylars).
+
+-----------------------------
 v1.4.1
 
 - Introduced plenty of safety checks to avoid some null reference errors.

@@ -3,23 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.Linq;
+using Assets.Events;
 
 public class FurnitureSpriteController : MonoBehaviour
 {
-    public Dictionary<Furniture, GameObject> FurnitureGameObjectMap;
-    public Dictionary<string, Sprite> FurnitureSprites;
-    private World _world { get { return WorldController.Instance.World; } }
+    private World _world => WorldController.Instance.World;
+
+    public Dictionary<Furniture, GameObject> FurnitureGameObjectMap = new();
+    public Dictionary<string, Sprite> FurnitureSprites = new();
 
     void Start()
     {
         LoadFurnitureSprites();
-        FurnitureGameObjectMap = new Dictionary<Furniture, GameObject>();
-        _world.RegisterFurnitureCallback(OnFurnitureCreated);
+        _world.FurnitureCreated += OnFurnitureCreated;
     }
 
     void LoadFurnitureSprites()
     {
-        FurnitureSprites = new Dictionary<string, Sprite>();
         Sprite[] s = Resources.LoadAll<Sprite>("Walls/");
 
         foreach (var sprite in s)
@@ -28,28 +28,32 @@ public class FurnitureSpriteController : MonoBehaviour
         }
     }
 
-    public void OnFurnitureCreated(Furniture obj)
+    public void OnFurnitureCreated(object sender, FurnitureCreatedEventArgs args)
     {
-        GameObject furnGo = new GameObject();
+        GameObject furnitureGameObject = new GameObject();
+        Furniture furniture = args.Furniture;
 
-        FurnitureGameObjectMap.Add(obj, furnGo);
-        furnGo.name = obj.ObjectType + "_" + obj.Tile.X + "_" + obj.Tile.Y;
-        furnGo.transform.position = new Vector3(obj.Tile.X, obj.Tile.Y, -1);
-        furnGo.transform.SetParent(this.transform, true);
+        FurnitureGameObjectMap.Add(furniture, furnitureGameObject);
+        furnitureGameObject.name = furniture.ObjectType + "_" + furniture.Tile.X + "_" + furniture.Tile.Y;
+        furnitureGameObject.transform.position = new Vector3(furniture.Tile.X, furniture.Tile.Y, -1);
+        furnitureGameObject.transform.SetParent(this.transform, true);
 
-        SpriteRenderer sr = furnGo.AddComponent<SpriteRenderer>();
-        sr.sprite = GetFurnitureSprite(obj, true);
+        SpriteRenderer sr = furnitureGameObject.AddComponent<SpriteRenderer>();
+        sr.sprite = GetFurnitureSprite(furniture, true);
         sr.sortingLayerName = "Furniture";
 
-        obj.RegisterOnChangedCallback(OnFurnitureChanged);
+        furniture.FurnitureChanged += OnFurnitureChanged;
     }
 
-    public void OnFurnitureRemoved(Furniture obj)
+    public void OnFurnitureRemoved(object sender, EventArgs args)
     {
-        GameObject furnGo = FurnitureGameObjectMap[obj];
-        Destroy(furnGo);
-        obj.Tile.RemoveFurniture();
-        FurnitureGameObjectMap.Remove(obj);
+        var furniture = sender as Furniture;
+        GameObject furnitureGameObject = FurnitureGameObjectMap[furniture];
+
+        Destroy(furnitureGameObject);
+        furniture.Tile.RemoveFurniture();
+        furniture.FurnitureChanged -= OnFurnitureChanged;
+        FurnitureGameObjectMap.Remove(furniture);
     }
 
     public void UpdateFurnitureSprites(List<Tile> tiles)
@@ -65,9 +69,12 @@ public class FurnitureSpriteController : MonoBehaviour
                 }
             }
         }
+
         Debug.Log("Tiles to update:" + tilesToUpdate.Count);
+
         foreach (Tile tile in tiles)
             tilesToUpdate.Remove(tile);
+
         Debug.Log("Tiles to update:" + tilesToUpdate.Count);
 
         foreach (Tile tile in tilesToUpdate)
@@ -168,9 +175,9 @@ public class FurnitureSpriteController : MonoBehaviour
         return FurnitureSprites[obj.ObjectType + "_" + spriteNumber];
     }
 
-    void OnFurnitureChanged(Furniture obj)
+    void OnFurnitureChanged(object sender, EventArgs args)
     {
-
+        //TODO: implement
     }
 
     public Sprite GetSpriteForFurniture(string objectType)

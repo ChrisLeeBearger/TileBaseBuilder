@@ -5,23 +5,32 @@ using System;
 
 public class Furniture
 {
+    private float movementCost;
+
+    private int width;
+    private int height;
+
+    private Func<Tile, bool> _funcPositionValidation;
+
+    public event EventHandler FurnitureChanged;
+
+    public bool linksToNeighbors { get; protected set; }
 
     public Tile Tile { get; protected set; }
 
     public string ObjectType { get; protected set; }
 
-    float movementCost;
+    protected Furniture()
+    {
 
-    int width;
-    int height;
-    Action<Furniture> cbOnChanged;
+    }
 
-    private Func<Tile, bool> _funcPositionValidation;
-
-    public bool linksToNeighbors { get; protected set; }
-
-    protected Furniture() { }
-    static public Furniture CreatePrototype(string ObjectType, float movementCost = 1f, int width = 1, int height = 1, bool linksToNeighbors = false)
+    public static Furniture CreatePrototype(
+        string ObjectType,
+        float movementCost = 1f,
+        int width = 1,
+        int height = 1,
+        bool linksToNeighbors = false)
     {
         Furniture obj = new Furniture();
 
@@ -30,15 +39,16 @@ public class Furniture
         obj.width = width;
         obj.height = height;
         obj.linksToNeighbors = linksToNeighbors;
-        obj._funcPositionValidation = obj.__IsValidPosition;
+        obj._funcPositionValidation = obj.IsValidPosition;
+
         return obj;
     }
 
-    static public Furniture PlaceInstance(Furniture proto, Tile tile)
+    public static Furniture PlaceInstance(Furniture proto, Tile tile)
     {
-        if (proto._funcPositionValidation(tile) == false)
+        if (proto.IsValidPosition(tile) == false)
         {
-            Debug.LogError("PlaceInstance --- Position Validity Function returned FALSE.");
+            Debug.LogError("PlaceInstance --- Invalid position.");
             return null;
         }
 
@@ -61,21 +71,13 @@ public class Furniture
         }
         return obj;
     }
-    public void RegisterOnChangedCallback(Action<Furniture> callbackFunction) => cbOnChanged += callbackFunction;
 
-    public void UnregisterOnChangedCallback(Action<Furniture> callbackFunction) => cbOnChanged -= callbackFunction;
+    public bool IsValidPosition(Tile tile) => tile.Type == TileType.Floor && tile.Furniture == null;
 
-    public bool IsValidPosition(Tile tile) => _funcPositionValidation(tile);
-
-    // ! These functions should never be called directly
-    // ! So they probably should not be public functions in the future
-    // Make sure the Tile below is of Type Floor and is not holding a Furniture
-    public bool __IsValidPosition(Tile tile) => (tile.Type == TileType.Floor && tile.Furniture == null);
-
-    public bool __IsValidPosition_Door(Tile tile)
+    public bool IsValidPositionDoor(Tile tile)
     {
         // Make sure we have a pair of East/West or North/West Walls next to us
-        Debug.LogError("IsValidPosition_Door - - - Implement me.");
+        Debug.LogError("IsValidPositionDoor - - - Implement me.");
         return false;
     }
 }

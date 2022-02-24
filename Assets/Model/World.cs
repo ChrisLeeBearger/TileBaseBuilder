@@ -1,66 +1,73 @@
-﻿using System.Collections;
+﻿using Assets.Events;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
+using Random = UnityEngine.Random;
 
 public class World
 {
-    Tile[,] tiles;
-    Dictionary<string, Furniture> _furniturePrototypes;
-    List<Character> characters;
-    public int Width { get; private set; }
-    public int Height { get; private set; }
-    Action<Furniture> _cbFurnitureCreated;
-    Action<Tile> _cbTileChanged;
-    Action<Character> _cbCharacterCreated;
+    private readonly List<Character> _characters;
+    private readonly Tile[,] _tiles;
+
+    public event EventHandler<CharacterCreatedEventArgs> CharacterCreated;
+    public event EventHandler<FurnitureCreatedEventArgs> FurnitureCreated;
+    public event EventHandler<TileChangedEventArgs> TileChanged; 
+
+    private Dictionary<string, Furniture> _furniturePrototypes;
+
     public JobQueue JobQueue;
+    public int Width { get; }
+    public int Height { get; }
 
     public World(int width = 100, int height = 100)
     {
         JobQueue = new JobQueue();
-        characters = new List<Character>();
+        _characters = new List<Character>();
 
-        tiles = new Tile[width, height];
-        this.Width = width;
-        this.Height = height;
+        _tiles = new Tile[width, height];
+        Width = width;
+        Height = height;
 
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
+        for (var x = 0; x < width; x++)
+            for (var y = 0; y < height; y++)
             {
-                tiles[x, y] = new Tile(this, x, y);
-                tiles[x, y].RegisterTileTypeChangedCallback(OnTileChanged);
-
+                _tiles[x, y] = new Tile(this, x, y);
+                _tiles[x, y].TileChanged += OnTileChanged;
             }
-        }
-        Debug.Log("World created with " + (width * height) + " tiles.");
+
+        Debug.Log("World created with " + width * height + " tiles.");
         CreateFurniturePrototypes();
     }
 
+    private void OnCharacterCreated(Character character) => CharacterCreated.Invoke(this, new CharacterCreatedEventArgs { Character = character });
+    private void OnFurnitureCreated(Furniture furniture) => FurnitureCreated.Invoke(this, new FurnitureCreatedEventArgs { Furniture = furniture });
+    private void OnTileChanged(object sender, TileChangedEventArgs args) => TileChanged.Invoke(sender, args);
+
     public void Update(float deltaTime)
     {
-        foreach (Character c in characters)
+        foreach (var c in _characters)
             c.Update(deltaTime);
     }
 
     public Character CreateCharacter(Tile tile)
     {
-        Character c = new Character(tile);
-        characters.Add(c);
-        if (_cbCharacterCreated != null)
-            _cbCharacterCreated(c);
-        return c;
+        var character = new Character(tile);
+
+        _characters.Add(character);
+        OnCharacterCreated(character);
+
+        return character;
     }
 
-    void CreateFurniturePrototypes()
+    private void CreateFurniturePrototypes()
     {
         _furniturePrototypes = new Dictionary<string, Furniture>();
-        Furniture wallPrototype = Furniture.CreatePrototype(
+        var wallPrototype = Furniture.CreatePrototype(
             "greyWall",
-            0,      // Impassable
-            1,      // Width
-            1,      // Height
-            true    // Links to neighbor Walls
+            0, // Impassable
+            1, // Width
+            1, // Height
+            true // Links to neighbor walls
         );
         _furniturePrototypes.Add("greyWall", wallPrototype);
         Debug.Log("Prototype has been created: " + wallPrototype.ObjectType);
@@ -68,10 +75,14 @@ public class World
 
     public Tile GetTileAt(int x, int y)
     {
+        // if requested tile is out of world coordinates
         if (x > Width || x < 0 || y > Height || y < 0)
+        {
             Debug.LogError("Requested tile is out of range.");
+            return null;
+        }
 
-        Tile tile = tiles[x, y];
+        var tile = _tiles[x, y];
         if (tile == null)
             Debug.LogError("Missing tile at position (" + x + ", " + y + ")");
 
@@ -87,49 +98,24 @@ public class World
             return;
         }
 
-        Furniture obj = Furniture.PlaceInstance(_furniturePrototypes[objectType], tile);
+        var furniture = Furniture.PlaceInstance(_furniturePrototypes[objectType], tile);
 
         // Create the visual GameObject if we placed the object successfully
-        if (obj != null)
-        {
-            if (_cbFurnitureCreated != null)
-                _cbFurnitureCreated(obj);
-        }
-
+        if (furniture != null)
+            OnFurnitureCreated(furniture);
     }
 
     public void RandomizeTiles()
     {
-        Debug.Log("World has been randomized.");
-        for (int x = 0; x < Width; x++)
-        {
-            for (int y = 0; y < Height; y++)
-            {
-                if (UnityEngine.Random.Range(0, 2) == 0)
-                    tiles[x, y].Type = TileType.Ground;
+        for (var x = 0; x < Width; x++)
+            for (var y = 0; y < Height; y++)
+                if (Random.Range(0, 2) == 0)
+                    _tiles[x, y].Type = TileType.Ground;
                 else
-                    tiles[x, y].Type = TileType.Gras;
-            }
-        }
+                    _tiles[x, y].Type = TileType.Gras;
+        Debug.Log("World has been randomized.");
     }
-    public void RegisterFurnitureCallback(Action<Furniture> callbackFunction) => _cbFurnitureCreated += callbackFunction;
 
-    public void UnregisterFurnitureCallback(Action<Furniture> callbackFunction) => _cbFurnitureCreated -= callbackFunction;
-
-    public void RegisterTileCallback(Action<Tile> callbackFunction) => _cbTileChanged += callbackFunction;
-
-    public void UnregisterTileCallback(Action<Tile> callbackFunction) => _cbTileChanged -= callbackFunction;
-
-    public void RegisterCharacterCallback(Action<Character> callbackFunction) => _cbCharacterCreated += callbackFunction;
-
-    public void UnregisterCharacterCallback(Action<Character> callbackFunction) => _cbCharacterCreated -= callbackFunction;
-
-    void OnTileChanged(Tile tile)
-    {
-        if (_cbTileChanged == null)
-            return;
-        _cbTileChanged(tile);
-    }
 
     public bool IsFurniturePlacementValid(string furnitureType, Tile tile)
     {

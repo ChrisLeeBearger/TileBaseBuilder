@@ -6,13 +6,14 @@ using System.Linq;
 
 public class WorldController : MonoBehaviour
 {
-
     public static WorldController Instance { get; protected set; }
 
     // Sprites array for our tiles, assignable in the inspector.
     [Header("Sprites")]
     public Sprite[] tileSprites;
     [SerializeField] private Sprite wallSprite;
+    [SerializeField] private int worldHeight;
+    [SerializeField] private int worldWidth;
 
     public Dictionary<Tile, GameObject> tileGameObjectMap;
     public Dictionary<Furniture, GameObject> FurnitureGameObjectMap;
@@ -26,7 +27,7 @@ public class WorldController : MonoBehaviour
             Debug.LogError("World, Start - There should only be one world.");
         Instance = this;
 
-        World = new World();
+        World = new World(worldWidth,worldHeight);
         // Center the camera on game start
         Camera.main.transform.position = new Vector3(World.Width / 2, World.Height / 2, -15);
     }

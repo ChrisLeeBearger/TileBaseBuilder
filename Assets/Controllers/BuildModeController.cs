@@ -1,8 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.EventSystems;
-using System.Linq;
+﻿using UnityEngine;
+
 public class BuildModeController : MonoBehaviour
 {
     bool _buildModeIsObjects = false;
@@ -31,27 +28,28 @@ public class BuildModeController : MonoBehaviour
     {
         if (_buildModeIsObjects)
         {
-            // Create an installed object instantly
-            // WorldController.Instance.World.PlaceFurniture("greyWall", tile);
-
-            // Can we build the furniture in the selected tile?
+            // If we can not place the furniture in the selected tile abort
             if (WorldController.Instance.World.IsFurniturePlacementValid(_buildModObjectType, tile) == false || tile.PendingFurnitureJob != null)
                 return;
+
             // We are saving the furniture type in a local variable as at the time the job is executed
             // the _buildModObjectType variable most likely has changed
             string furnitureType = _buildModObjectType;
-            Job job = new Job(tile, furnitureType, (theJob) =>
+
+            Job job = new Job(tile, furnitureType, (sender,args) =>
             {
                 WorldController.Instance.World.PlaceFurniture(furnitureType, tile);
             });
+
             WorldController.Instance.World.JobQueue.Enqueue(job);
             Debug.Log("Job added.");
         }
         // We are in bulldoze mode
         else if (_buildModeTile == TileType.Ground && tile.Furniture != null)
         {
-            // tilesFurnitureRemoved.Add(tile);
             // TODO: Currently we are not able to handle deletion of Furniture due to refactoring of classes
+
+            // tilesFurnitureRemoved.Add(tile);
             // WorldController.Instance.OnFurnitureRemoved(tile.Furniture);
             // if (tilesFurnitureRemoved.Count != 0)
             // {
@@ -59,6 +57,7 @@ public class BuildModeController : MonoBehaviour
             //     // TODO: Currently we are not able to handle deletion of Furniture due to refactoring of classes
             //     WorldController.Instance.UpdateFurnitureSprites(tilesFurnitureRemoved);
             // }
+
         }
         else
         {

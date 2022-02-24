@@ -2,24 +2,27 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using Assets.Events;
 
 public enum TileType { Empty, Ground, Gras, Floor, Water, Stone };
 public class Tile
 {
-    Action<Tile> cbTileTypeChanged;
 
     TileType type = TileType.Empty;
+
     public Job PendingFurnitureJob;
+
+    public event EventHandler<TileChangedEventArgs> TileChanged;
+
     public TileType Type
     {
-        get { return type; }
+        get => type;
         set
         {
             if (type != value)
             {
                 type = value;
-                if (cbTileTypeChanged != null)
-                    cbTileTypeChanged(this);
+                OnTileChanged();
             }
         }
     }
@@ -27,6 +30,7 @@ public class Tile
     public LooseObject LooseObject { get; protected set; }
     public Furniture Furniture { get; protected set; }
     public World World { get; protected set; }
+
     public int X { get; private set; }
     public int Y { get; private set; }
 
@@ -37,9 +41,7 @@ public class Tile
         this.Y = y;
     }
 
-    public void RegisterTileTypeChangedCallback(Action<Tile> callback) => cbTileTypeChanged += callback;
-
-    public void UnregisterTileTypeChangedCallback(Action<Tile> callback) => cbTileTypeChanged -= callback;
+    private void OnTileChanged() => TileChanged.Invoke(this, new TileChangedEventArgs { Tile = this });
 
     public bool PlaceFurniture(Furniture objInstance)
     {

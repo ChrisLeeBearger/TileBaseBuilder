@@ -1,8 +1,10 @@
 ﻿/* ---------------------------------------
- * Author: Martin Pane (martintayx@gmail.com) (@tayx94)
- * Project: Graphy - Ultimate Stats Monitor
- * Date: 23-Dec-17
- * Studio: Tayx
+ * Author:          Martin Pane (martintayx@gmail.com) (@tayx94)
+ * Collaborators:   Lars Aalbertsen (@Rockylars)
+ * Project:         Graphy - Ultimate Stats Monitor
+ * Date:            23-Dec-17
+ * Studio:          Tayx
+ * 
  * This project is released under the MIT license.
  * Attribution is not required, but it is always welcomed!
  * -------------------------------------*/
@@ -11,9 +13,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 
 using Tayx.Graphy.Audio;
@@ -23,11 +23,18 @@ using Tayx.Graphy.Utils;
 
 namespace Tayx.Graphy
 {
-    public class GraphyDebugger : Singleton<GraphyDebugger>
+    public class GraphyDebugger : G_Singleton<GraphyDebugger>
     {
+        /* ----- TODO: ----------------------------
+         * Add summaries to the variables.
+         * Add summaries to the functions.
+         * Ask why we're not using System.Serializable instead for the helper class.
+         * Simplify the initializers of the DebugPackets, but check wether we should as some wont work with certain lists.
+         * --------------------------------------*/
+
         protected GraphyDebugger () { }
 
-        #region Enums
+        #region Enums -> Public
 
         public enum DebugVariable
         {
@@ -66,7 +73,7 @@ namespace Tayx.Graphy
 
         #endregion
 
-        #region Structs
+        #region Structs -> Public
 
         [Serializable]
         public struct DebugCondition
@@ -81,7 +88,7 @@ namespace Tayx.Graphy
 
         #endregion
 
-        #region Helper Class
+        #region Helper Classes
 
         [Serializable]
         public class DebugPacket
@@ -112,7 +119,7 @@ namespace Tayx.Graphy
             [Tooltip("If true, it pauses the editor")]
             public bool                 DebugBreak              = false;
             public UnityEvent           UnityEvents;
-            public List<Action>         Callbacks               = new List<Action>();
+            public List<System.Action>  Callbacks               = new List<System.Action>();
 
 
             private bool canBeChecked = false;
@@ -147,27 +154,30 @@ namespace Tayx.Graphy
 
         #endregion
 
+        #region Variables -> Serialized Private
 
-        #region Private Variables
-
-        private FpsMonitor m_fpsMonitor;
-        private RamMonitor m_ramMonitor;
-        private AudioMonitor m_audioMonitor;
-
-        [SerializeField] private List<DebugPacket> m_debugPackets;
+        [SerializeField] private    List<DebugPacket>   m_debugPackets = new List<DebugPacket>();
 
         #endregion
 
-        #region Unity Methods
+        #region Variables -> Private
 
-        void Start()
+        private                     G_FpsMonitor          m_fpsMonitor = null;
+        private                     G_RamMonitor          m_ramMonitor = null;
+        private                     G_AudioMonitor        m_audioMonitor = null;
+
+        #endregion
+
+        #region Methods -> Unity Callbacks
+
+        private void Start()
         {
-            m_fpsMonitor    = GetComponentInChildren<FpsMonitor>();
-            m_ramMonitor    = GetComponentInChildren<RamMonitor>();
-            m_audioMonitor  = GetComponentInChildren<AudioMonitor>();
+            m_fpsMonitor    = GetComponentInChildren<G_FpsMonitor>();
+            m_ramMonitor    = GetComponentInChildren<G_RamMonitor>();
+            m_audioMonitor  = GetComponentInChildren<G_AudioMonitor>();
         }
 
-        void Update()
+        private void Update()
         {
             CheckDebugPackets();
         }
@@ -197,7 +207,7 @@ namespace Tayx.Graphy
             MessageType newMessageType,
             string newMessage,
             bool newDebugBreak,
-            Action newCallback
+            System.Action newCallback
         )
         {
             DebugPacket newDebugPacket = new DebugPacket();
@@ -222,7 +232,7 @@ namespace Tayx.Graphy
             MessageType newMessageType,
             string newMessage,
             bool newDebugBreak,
-            Action newCallback
+            System.Action newCallback
         )
         {
             DebugPacket newDebugPacket = new DebugPacket();
@@ -247,7 +257,7 @@ namespace Tayx.Graphy
             MessageType newMessageType,
             string newMessage,
             bool newDebugBreak,
-            List<Action> newCallbacks
+            List<System.Action> newCallbacks
         )
         {
             DebugPacket newDebugPacket = new DebugPacket();
@@ -272,7 +282,7 @@ namespace Tayx.Graphy
             MessageType newMessageType,
             string newMessage,
             bool newDebugBreak,
-            List<Action> newCallbacks
+            List<System.Action> newCallbacks
         )
         {
             DebugPacket newDebugPacket = new DebugPacket();
@@ -338,7 +348,7 @@ namespace Tayx.Graphy
         /// </summary>
         /// <param name="callback"></param>
         /// <param name="id"></param>
-        public void AddCallbackToFirstDebugPacketWithId(Action callback, int id)
+        public void AddCallbackToFirstDebugPacketWithId(System.Action callback, int id)
         {
             if (GetFirstDebugPacketWithId(id) != null)
             {
@@ -351,7 +361,7 @@ namespace Tayx.Graphy
         /// </summary>
         /// <param name="callback"></param>
         /// <param name="id"></param>
-        public void AddCallbackToAllDebugPacketWithId(Action callback, int id)
+        public void AddCallbackToAllDebugPacketWithId(System.Action callback, int id)
         {
             if (GetAllDebugPacketsWithId(id) != null)
             {
@@ -367,73 +377,76 @@ namespace Tayx.Graphy
 
         #endregion
 
-        #region Private Methods
+        #region Methods -> Private
 
         /// <summary>
         /// Checks all the Debug Packets to see if they have to be executed.
         /// </summary>
         private void CheckDebugPackets()
         {
-            if (m_debugPackets != null && m_debugPackets.Count > 0)
+            if (m_debugPackets == null)
             {
-                foreach (DebugPacket packet in m_debugPackets)
+                return;
+            }
+
+            for (var i = 0; i < m_debugPackets.Count; i++)
+            {
+                DebugPacket packet = m_debugPackets[i];
+
+                if (packet != null && packet.Active)
                 {
-                    if (packet != null && packet.Active)
+                    packet.Update();
+
+                    if (packet.Check)
                     {
-                        packet.Update();
-
-                        if (packet.Check)
+                        switch (packet.ConditionEvaluation)
                         {
-                            switch (packet.ConditionEvaluation)
-                            {
-                                case ConditionEvaluation.All_conditions_must_be_met:
-                                    int count = 0;
+                            case ConditionEvaluation.All_conditions_must_be_met:
+                                int count = 0;
 
-                                    foreach (var packetDebugCondition in packet.DebugConditions)
+                                foreach (var packetDebugCondition in packet.DebugConditions)
+                                {
+                                    if (CheckIfConditionIsMet(packetDebugCondition))
                                     {
-                                        if (CheckIfConditionIsMet(packetDebugCondition))
-                                        {
-                                            count++;
-                                        }
+                                        count++;
                                     }
+                                }
 
-                                    if (count >= packet.DebugConditions.Count)
+                                if (count >= packet.DebugConditions.Count)
+                                {
+                                    ExecuteOperationsInDebugPacket(packet);
+
+                                    if (packet.ExecuteOnce)
+                                    {
+                                        m_debugPackets[i] = null;
+                                    }
+                                }
+
+                                break;
+
+                            case ConditionEvaluation.Only_one_condition_has_to_be_met:
+                                foreach (var packetDebugCondition in packet.DebugConditions)
+                                {
+                                    if (CheckIfConditionIsMet(packetDebugCondition))
                                     {
                                         ExecuteOperationsInDebugPacket(packet);
 
                                         if (packet.ExecuteOnce)
                                         {
-                                            m_debugPackets[m_debugPackets.IndexOf(packet)] = null;
+                                            m_debugPackets[i] = null;
                                         }
+
+                                        break;
                                     }
-                                    break;
+                                }
 
-                                case ConditionEvaluation.Only_one_condition_has_to_be_met:
-                                    foreach (var packetDebugCondition in packet.DebugConditions)
-                                    {
-                                        if (CheckIfConditionIsMet(packetDebugCondition))
-                                        {
-                                            ExecuteOperationsInDebugPacket(packet);
-
-                                            if (packet.ExecuteOnce)
-                                            {
-                                                m_debugPackets[m_debugPackets.IndexOf(packet)] = null;
-                                            }
-
-                                            break;
-                                        }
-                                    }
-                                    break;
-                            }
+                                break;
                         }
                     }
                 }
             }
 
-            if (m_debugPackets != null)
-            {
-                m_debugPackets.RemoveAll((packet) => packet == null);
-            }
+            m_debugPackets.RemoveAll((packet) => packet == null);
         }
 
         /// <summary>
