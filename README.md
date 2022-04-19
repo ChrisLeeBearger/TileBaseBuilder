@@ -2,9 +2,13 @@
 
 TileBaseBuilder is a 2D base building game created with [Unity](https://unity.com/) and is heavily inspired by games like [RimWorld](https://store.steampowered.com/app/294100/RimWorld/).
 
-## Architecture
+## Project Goals
 
-Game logic and presentation logic are separated from each other. On startup presentation layer registers callbacks on events of the game layer.
+- [x] Wall placement system
+- [x] Job queue
+- [ ] Resource managment
+- [ ] Pathfinding
+- [ ] Combat system
 
 ## Screenshots
 
