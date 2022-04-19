@@ -10,13 +10,13 @@ TileBaseBuilder is a 2D base building game created with [Unity](https://unity.co
 - [ ] Pathfinding
 - [ ] Combat system
 
-## Screenshots
-
-![Ingame Image](https://raw.githubusercontent.com/chr-ber/TileBaseBuilder/master/readme-files/game-screenshot-001.png)
-
 ## Live Demo
 
 Playable demo can be found at https://tilebasebuilder.chrisberger.dev/
+
+## Screenshots
+
+![Ingame Image](https://raw.githubusercontent.com/chr-ber/TileBaseBuilder/master/readme-files/game-screenshot-001.png)
 
 ## Graphic Assets
 
